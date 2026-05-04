@@ -422,8 +422,8 @@ const runEvents = [
     text: "在街頭閒逛的你突然聽到激烈的爭吵聲。",
     lines: [
       "在街頭閒逛的你突然聽到激烈的爭吵聲。",
-      "你連忙上前湊熱鬧。人群圍著兩名女子議論紛紛，一名女子下跪拉著另一名女子說：求求妳告訴我，我做錯什麼。被拉住的女子看起來並不想理會。",
-      "你決定幫助下跪的女生、幫助站著的女生，或是旁觀？",
+      "你連忙上前湊熱鬧。人群圍著兩名女子議論紛紛，一名女子下跪拉著另一名女子說：求求妳告訴我，我做錯什麼。",
+      "雙方你拉我扯，於是你決定....",
     ],
     options: [
       {
@@ -671,8 +671,8 @@ const eventItems = {
   "亂畫的地圖": {
     name: "亂畫的地圖",
     icon: "🗺",
-    desc: "下跪的女生亂畫的地圖，看起來不像能指路。",
-    effect: "戰鬥中使敵方第一個有攻擊意圖的敵人目標混亂。",
+    desc: "亂畫的地圖，看了會迷路吧。",
+    effect: "使敵方第一個有攻擊意圖的敵人意圖轉變為迷路。",
     apply(player) {
       player.items.push("亂畫的地圖");
     },
@@ -680,7 +680,7 @@ const eventItems = {
   "裝可愛心機": {
     name: "裝可愛心機",
     icon: "💗",
-    desc: "站著的女生傳授的可愛秘訣。",
+    desc: "傳授了許多裝可愛秘訣。",
     effect: "之後小頭目獎勵可以多選一件。",
     apply(player) {
       player.items.push("裝可愛心機");
@@ -880,8 +880,9 @@ const cards = {
     upgradeText: "親親子獲得 9 點防禦。",
     target: "self",
     play() {
-      state.battle.player.block += 7;
-      log("親親子獲得 7 點防禦。");
+      const amount = this.upgraded ? 9 : 7;
+      state.battle.player.block += amount;
+      log(`親親子獲得 ${amount} 點防禦。`);
     },
   },
   "最喜歡你了": {
@@ -916,9 +917,10 @@ const cards = {
     upgradeText: "親親子獲得 8 點防禦。本回合受到所有傷害減少 2。",
     target: "self",
     play() {
+      const reduction = this.upgraded ? 2 : 1;
       state.battle.player.block += 8;
-      state.battle.player.damageReduction = Math.max(state.battle.player.damageReduction || 0, 1);
-      log("親親子獲得 8 點防禦，本回合受到所有傷害減少 1。");
+      state.battle.player.damageReduction = Math.max(state.battle.player.damageReduction || 0, reduction);
+      log(`親親子獲得 8 點防禦，本回合受到所有傷害減少 ${reduction}。`);
     },
   },
   "小剪刀": {
@@ -1258,8 +1260,9 @@ const cards = {
     target: "self",
     exhaustForBattle: true,
     play() {
-      state.battle.powers.knifeShield = 3;
-      log("獲得增益：我的刀盾。");
+      const amount = this.upgraded ? 5 : 3;
+      state.battle.powers.knifeShield = amount;
+      log(`獲得增益：我的刀盾，打出剪剪系牌獲得 ${amount} 點防禦。`);
     },
   },
   "最愛大家了": {
@@ -1272,7 +1275,7 @@ const cards = {
     target: "self",
     play() {
       const enemies = liveEnemyUnits();
-      enemies.forEach((unit) => addCharm(unit, 7));
+      enemies.forEach((unit) => addCharm(unit, this.upgraded ? 9 : 7));
       const totalCharm = enemies.reduce((sum, unit) => sum + (unit.charm || 0), 0);
       heal(state.battle.player, Math.round(totalCharm / 10));
     },
@@ -1314,7 +1317,7 @@ const cards = {
     upgradeText: "親親子回復 7 點生命。若本回合已打出小菸系牌，抽 1 張牌。",
     target: "self",
     play() {
-      heal(state.battle.player, 5);
+      heal(state.battle.player, this.upgraded ? 7 : 5);
       if (state.battle.playedTags?.includes("小菸系")) draw(1);
     },
   },
@@ -1372,7 +1375,7 @@ const cards = {
     upgradeText: "親親子失去 2 點生命，獲得 2 點能量。",
     target: "self",
     play() {
-      damage(state.battle.player, 4);
+      damage(state.battle.player, this.upgraded ? 2 : 4);
       state.battle.energy += 2;
       log("親親子獲得 2 點能量。");
     },
@@ -1386,7 +1389,7 @@ const cards = {
     upgradeText: "親親子失去 1 點生命，抽 1 張牌。如果本回合打出過小菸系卡牌，耗能 -1。",
     target: "self",
     play() {
-      damage(state.battle.player, 2);
+      damage(state.battle.player, this.upgraded ? 1 : 2);
       draw(1);
     },
   },
@@ -1449,8 +1452,9 @@ const cards = {
     target: "self",
     exhaustForBattle: true,
     play() {
-      state.battle.powers.charmBonus = 1;
-      log("獲得增益：擦邊主播，魅惑量 +1。");
+      const amount = this.upgraded ? 2 : 1;
+      state.battle.powers.charmBonus = amount;
+      log(`獲得增益：擦邊主播，魅惑量 +${amount}。`);
     },
   },
   "斗內費": {
@@ -1491,7 +1495,7 @@ const cards = {
     randomTargetCard: true,
     target: "self",
     play(target) {
-      for (let i = 0; i < 2; i += 1) {
+      for (let i = 0; i < (this.upgraded ? 3 : 2); i += 1) {
         const targets = liveEnemyUnits();
         if (!targets.length) return;
         const picked = this.blessing === "暴雪祝福" && target?.hp > 0 ? target : sample(targets);
@@ -1509,7 +1513,7 @@ const cards = {
     upgradeText: "親親子失去 4 點生命。敵方目前場上單位無法攻擊。",
     target: "self",
     play() {
-      damage(state.battle.player, 6);
+      damage(state.battle.player, this.upgraded ? 4 : 6);
       liveEnemyUnits().forEach((unit) => {
         if (kutaVoiceNegatesDebuff(unit, "無法攻擊")) return;
         unit.noAttack = true;
@@ -1538,8 +1542,9 @@ const cards = {
     upgradeText: "下兩次當小菸牌使親親子失去血量時，給予隨機 1 名敵方單位親親子失去血量的魅惑值。",
     target: "self",
     play() {
-      state.battle.smokeCharmTriggers = (state.battle.smokeCharmTriggers || 0) + 1;
-      log("下次小菸失血會轉為隨機對手魅惑。");
+      const amount = this.upgraded ? 2 : 1;
+      state.battle.smokeCharmTriggers = (state.battle.smokeCharmTriggers || 0) + amount;
+      log(`接下來 ${amount} 次小菸失血會轉為隨機對手魅惑。`);
     },
   },
   "紙片人殺手": {
@@ -1551,7 +1556,8 @@ const cards = {
     upgradeText: "對敵方單體造成 8 點攻擊傷害。目標每有 2 點魅惑，額外造成 2 點攻擊傷害。",
     target: "enemy",
     play(target) {
-      dealAttack(target, 8 + Math.floor((target.charm || 0) / 2), "親親子");
+      const bonusPerTwoCharm = this.upgraded ? 2 : 1;
+      dealAttack(target, 8 + Math.floor((target.charm || 0) / 2) * bonusPerTwoCharm, "親親子");
     },
   },
   "肺活量訓練": {
@@ -1579,7 +1585,7 @@ const cards = {
     upgradeText: "親親子失去 6 點生命。下一張卡牌重複打出兩次。",
     target: "self",
     play() {
-      damage(state.battle.player, 8);
+      damage(state.battle.player, this.upgraded ? 6 : 8);
       state.battle.repeatNextCard = 2;
       log("下一張卡牌會重複打出兩次。");
     },
@@ -1637,10 +1643,11 @@ const cards = {
     upgradeText: "親親子獲得 2 點生命上限，回復 2 點生命，抽 2 張牌。",
     target: "self",
     play() {
-      state.player.maxHp += 1;
-      state.battle.player.maxHp += 1;
-      heal(state.battle.player, 1);
-      draw(1);
+      const amount = this.upgraded ? 2 : 1;
+      state.player.maxHp += amount;
+      state.battle.player.maxHp += amount;
+      heal(state.battle.player, amount);
+      draw(amount);
     },
   },
   "一瞬V殺": {
@@ -1682,10 +1689,11 @@ const cards = {
     upgradeText: "選擇 1 名敵方單位減少 10 點魅惑。親親子本回合無法受到敵方傷害。打出本卡後結束此回合。",
     target: "enemy",
     play(target) {
-      target.charm = Math.max(0, (target.charm || 0) - 15);
+      const amount = this.upgraded ? 10 : 15;
+      target.charm = Math.max(0, (target.charm || 0) - amount);
       state.battle.playerImmuneToEnemyDamage = true;
       state.battle.endTurnAfterCard = true;
-      log(`${target.name} 魅惑減少 15。親親子本回合無法受到敵方傷害。`);
+      log(`${target.name} 魅惑減少 ${amount}。親親子本回合無法受到敵方傷害。`);
     },
   },
   "菸花燙燙燙": {
@@ -1699,7 +1707,7 @@ const cards = {
     play(target) {
       const smokeCount = (state.battle.playedTags || []).filter((tag) => tag === "小菸系").length;
       damage(state.battle.player, 4);
-      dealAttack(target, 10, "菸花燙燙燙");
+      dealAttack(target, this.upgraded ? 15 : 10, "菸花燙燙燙");
       for (let i = 0; i < smokeCount; i += 1) addToHand("小剪刀");
     },
   },
@@ -1715,7 +1723,7 @@ const cards = {
       damage(state.battle.player, 5);
       dealAttack(target, 20, "華麗殞落");
       if (target.hp <= 0) return;
-      if (addCharm(target, 15)) draw(1);
+      if (addCharm(target, 15)) draw(this.upgraded ? 2 : 1);
     },
   },
   "晚安啾啾": {
@@ -1756,7 +1764,7 @@ const cards = {
     upgradeText: "親親子失去 6 點生命。抽牌直到手牌上限。",
     target: "self",
     play() {
-      damage(state.battle.player, 8);
+      damage(state.battle.player, this.upgraded ? 6 : 8);
       draw(Math.max(0, (state.battle.handLimit || 10) - state.battle.hand.length));
     },
   },
@@ -1769,7 +1777,7 @@ const cards = {
     upgradeText: "對敵方單體造成 18 點攻擊傷害。此卡牌命中敵方單位時，親親子獲得 3 點生命上限。",
     target: "enemy",
     play(target) {
-      dealAttack(target, 15, "親親子");
+      dealAttack(target, this.upgraded ? 18 : 15, "親親子");
       if (target.side === "enemy") {
         state.player.maxHp += 3;
         state.battle.player.maxHp += 3;
@@ -1806,6 +1814,7 @@ function makeCard(name) {
 }
 
 function isBattleExhaustCard(card) {
+  if (card.name === "一瞬V殺" && card.upgraded) return false;
   return card.exhaustForBattle || card.type.includes("增益牌");
 }
 
@@ -4396,6 +4405,7 @@ function afterAttackDamage() {
 
 function damage(target, amount, source = null) {
   const b = state.battle;
+  const originalAmount = amount;
   if (target?.isMiniboss && target.name === "久田" && source?.side === "ally") {
     const fan = pickKutaFanProtector();
     if (fan) {
@@ -4444,9 +4454,10 @@ function damage(target, amount, source = null) {
     return 0;
   }
   if (target.traits?.includes("雲玩家") && sourceNameIsAttack(source) && !target.cloudPlayerUsed) {
+    const beforeCloudReduction = amount;
     amount = Math.ceil(amount / 2);
     target.cloudPlayerUsed = true;
-    log(`${target.name} 的雲玩家使本次攻擊傷害減半。`);
+    log(`${target.name} 的雲玩家使本次攻擊傷害減半（${beforeCloudReduction}→${amount}）。`);
   }
   if (
     target.id === "player" &&
@@ -4464,13 +4475,20 @@ function damage(target, amount, source = null) {
     }
     return 0;
   }
-  amount = Math.max(0, amount - (target.damageReduction || 0));
+  if (target.damageReduction) {
+    const beforeReduction = amount;
+    amount = Math.max(0, amount - target.damageReduction);
+    log(`${target.name} 的傷害減免生效，傷害 -${target.damageReduction}（${beforeReduction}→${amount}）。`);
+  }
   if (target.id === "player" && source?.side === "enemy" && state.player?.items?.includes("可愛狗狗雕像")) {
+    const beforeDogReduction = amount;
     amount = Math.max(0, amount - 2);
+    log(`可愛狗狗雕像減少 2 點傷害（${beforeDogReduction}→${amount}）。`);
   }
   const blocked = Math.min(target.block || 0, amount);
   target.block = Math.max(0, (target.block || 0) - blocked);
   const hpDamage = amount - blocked;
+  const hpBeforeDamage = target.hp;
   if (target.id === "player" && source?.side === "enemy" && b?.powers?.ashtrayBlock) {
     addToHand("小剪刀");
     log("煙灰缸格檔觸發，獲得 1 張小剪刀。");
@@ -4484,6 +4502,8 @@ function damage(target, amount, source = null) {
       b.smokeCharmTriggers -= 1;
     }
   }
+  const adjustedText = originalAmount !== amount ? `原始 ${originalAmount}，調整後 ${amount}；` : "";
+  log(`${target.name} 傷害結算：${adjustedText}防禦抵擋 ${blocked} 點，生命減少 ${hpDamage} 點（${hpBeforeDamage}→${target.hp}）。`);
   checkCharmExecute(target);
   if (target.hp <= 0) {
     handleUnitDefeated(target);
@@ -4503,10 +4523,14 @@ function heal(target, amount) {
 
 function addCharm(target, amount) {
   if (!target || target.hp <= 0) return false;
-  if (kutaVoiceNegatesDebuff(target, "魅惑")) return false;
-  amount += state.battle?.powers?.charmBonus || 0;
+  const originalAmount = amount;
+  if (kutaVoiceNegatesDebuff(target, `魅惑 ${amount}`)) return false;
+  const charmBonus = state.battle?.powers?.charmBonus || 0;
+  amount += charmBonus;
+  if (charmBonus) log(`擦邊主播使魅惑給予量 +${charmBonus}（${originalAmount}→${amount}）。`);
+  const beforeCharm = target.charm || 0;
   target.charm = (target.charm || 0) + amount;
-  log(`${target.name} 獲得 ${amount} 魅惑，目前 ${target.charm}。`);
+  log(`魅惑結算：給予 ${target.name} ${amount} 魅惑（${beforeCharm}→${target.charm}），目前生命 ${target.hp}/${target.maxHp}。`);
   if (state.battle?.powers?.lifeCharm && target.side === "enemy" && amount > 0) {
     target.hp = Math.max(0, target.hp - amount);
     heal(state.battle.player, amount);
@@ -4804,6 +4828,11 @@ function runEnemyAction(enemy) {
     enemy.turnIndex += 1;
     return;
   }
+  if (enemy.intent === "lost") {
+    log(`${enemy.name} 迷路，停止行動。`);
+    enemy.turnIndex += 1;
+    return;
+  }
   if (enemy.noAttack || (enemy.traits?.includes("暈船仔") && state.battle.player.hp < state.battle.player.maxHp * 0.5)) {
     log(`${enemy.name} 停止攻擊。`);
     return;
@@ -4861,7 +4890,7 @@ function kutaVoiceNegatesDebuff(target, debuffName) {
   if (!target || target.side !== "enemy" || target.id === kuta.id) return false;
   if (b.kutaVoiceNegatedThisRound) return false;
   b.kutaVoiceNegatedThisRound = true;
-  log(`久田的天籟美聲無效了 ${target.name} 的${debuffName}。`);
+  log(`久田的天籟美聲替 ${target.name} 抵擋了負面效果：${debuffName}。`);
   return true;
 }
 
@@ -5030,6 +5059,7 @@ function enemyIntent(enemy) {
   if (enemy.intent === "seasick") return "暈船";
   if (enemy.intent === "coverEars") return "摀住耳朵";
   if (enemy.intent === "knockdown") return "倒地";
+  if (enemy.intent === "lost") return "迷路";
   return `攻擊 ${enemyIntentAmount(enemy, "attack")}`;
 }
 
@@ -5066,11 +5096,16 @@ function assignEnemyIntents() {
       enemy.counterStance = enemy.intent === "counter";
       return;
     }
-    setEnemyIntent(
-      enemy,
-      (enemy.bodyRarity === "epic" || enemy.bodyRarity === "legendary") && Math.random() < 0.1 ? "heavy" : sample(["attack", "defend", "counter"])
-    );
+    setEnemyIntent(enemy, rollEnemyIntent());
   });
+}
+
+function rollEnemyIntent() {
+  const roll = Math.random() * 100;
+  if (roll < 15) return "heavy";
+  if (roll < 40) return "counter";
+  if (roll < 60) return "defend";
+  return "attack";
 }
 
 function assignKutaIntent(kuta) {
@@ -5086,9 +5121,9 @@ function applyDrawnMapConfusion() {
   if (!state.player?.items?.includes("亂畫的地圖") || b.drawnMapUsed) return;
   const target = b.enemies.find((enemy) => enemy.hp > 0 && (enemy.intent === "attack" || enemy.intent === "heavy"));
   if (!target) return;
-  setEnemyIntent(target, "seasick", { persistNextTurn: true });
+  setEnemyIntent(target, "lost", { persistNextTurn: true });
   b.drawnMapUsed = true;
-  log(`亂畫的地圖觸發，${target.name} 的攻擊目標混亂。`);
+  log(`亂畫的地圖觸發，${target.name} 的意圖轉為迷路。`);
 }
 
 function findUnit(id) {
