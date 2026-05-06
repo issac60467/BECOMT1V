@@ -23,7 +23,7 @@ const assetPaths = {
   titleRight: "assets/title-right-locked.png",
   characterSelect: "assets/character-select.png?v=20260502-1",
   chinchinkoProfile: "assets/chinchinko-profile.png",
-  chinchinkoBattleAvatar: "assets/chinchinko-battle-head.png",
+  chinchinkoBattleAvatar: "assets/chinchinko-battle-half-cropped.png",
   introVideo: "assets/intro-xd-hq.mp4",
   hqExterior: "assets/xd-hq-exterior.png",
   mentor: "assets/xiao-zhengming.png",
@@ -213,6 +213,20 @@ const keywordDescriptions = {
   "手牌上限": "手牌最多 10 張。",
   "開場會抽到手中": "戰鬥開始時會優先出現在起手手牌。",
 };
+
+const battleKeywordDescriptions = {
+  ...keywordDescriptions,
+  "嘲諷": "必須優先攻擊此目標。",
+  "反擊姿態": "受到攻擊傷害時，攻擊者會受到該單位攻擊傷害的反擊。",
+  "世界": "久田特殊意圖。下回合你只能打出 1 張卡片。",
+  "露大腿": "久田特殊意圖。久田戀愛粉攻擊傷害提高。",
+  "轉生": "久田特殊意圖。將同陣營單位轉生為久田戀愛粉。",
+  "天籟美聲": "每回合無效對手給予我方其他角色的負面效果一次。",
+  "粉絲服務": "每回合恢復擁有久田戀愛粉特性的單位 2 點生命值。",
+  "專業主播": "自己回合開始時減少自身最高數值的負面效果 3 層。",
+  "久田戀愛粉": "代為承受久田受到的一半攻擊傷害。",
+};
+delete battleKeywordDescriptions["增益牌"];
 
 const runRules = {
   postBattleActions: 2,
@@ -960,7 +974,7 @@ const cards = {
       const enemies = liveEnemyUnits();
       if (!enemies.length) return;
       const picked = sample(enemies);
-      setEnemyIntent(picked, "coverEars", { persistNextTurn: true });
+      setEnemyIntent(picked, "coverEars", { persistNextTurn: true, log: false });
       log(`${picked.name} 的意圖轉變為摀住耳朵。`);
     },
   },
@@ -1029,12 +1043,12 @@ const cards = {
     cost: 0,
     type: "蕭證明支援卡",
     rarity: "精良",
-    text: "使 1 名敵方單位降低 10 攻擊力一回合。燒毀。",
+    text: "使 1 名敵方單位降低 10 攻擊傷害一回合。燒毀。",
     target: "enemy",
     exhaustForBattle: true,
     play(target) {
       addAttackDown(target, 10);
-      log(`${target.name} 攻擊力降低 10。`);
+      log(`${target.name} 攻擊傷害降低 10。`);
     },
   },
   "消費天才": {
@@ -1090,7 +1104,7 @@ const cards = {
     exhaustForBattle: true,
     play() {
       liveEnemyUnits().forEach((enemy) => {
-        setEnemyIntent(enemy, "coverEars", { persistNextTurn: true });
+        setEnemyIntent(enemy, "coverEars", { persistNextTurn: true, log: false });
       });
       log("所有敵方意圖改成摀住耳朵。");
     },
@@ -1165,8 +1179,8 @@ const cards = {
     cost: 1,
     type: "魅惑系",
     rarity: "普通",
-    text: "給予敵方全體 3 點魅惑，並依據各敵方單位身上魅惑累積量減少等額攻擊一回合。",
-    upgradeText: "給予敵方全體 4 點魅惑，並依據各敵方單位身上魅惑累積量減少等額攻擊一回合。",
+    text: "給予敵方全體 3 點魅惑，並依據各敵方單位身上魅惑累積量減少等額攻擊傷害一回合。",
+    upgradeText: "給予敵方全體 4 點魅惑，並依據各敵方單位身上魅惑累積量減少等額攻擊傷害一回合。",
     target: "self",
     play() {
       liveEnemyUnits().forEach((unit) => {
@@ -1174,7 +1188,7 @@ const cards = {
         if (unit.hp <= 0) return;
         const loss = unit.charm || 0;
         addAttackDown(unit, loss);
-        log(`${unit.name} 因魅惑攻擊力 -${loss}。`);
+        log(`${unit.name} 因魅惑攻擊傷害 -${loss}。`);
       });
     },
   },
@@ -1289,7 +1303,7 @@ const cards = {
     upgradeText: "使 1 名敵方單位變更意圖為暈船，不會選到親親子。",
     target: "enemy",
     play(target) {
-      setEnemyIntent(target, "seasick", { persistNextTurn: true, seasickNoPlayer: Boolean(this.upgraded) });
+      setEnemyIntent(target, "seasick", { persistNextTurn: true, seasickNoPlayer: Boolean(this.upgraded), log: false });
       log(`${target.name} 的意圖變更為暈船。`);
     },
   },
@@ -2790,7 +2804,7 @@ function useBattleItemOnTarget(target) {
   }
   if (item.name === "手槍") {
     log(`對 ${target.name} 使用手槍。`);
-    setEnemyIntent(target, "knockdown", { persistNextTurn: true });
+    setEnemyIntent(target, "knockdown", { persistNextTurn: true, log: false });
     removeItemFromInventoryByIndex(itemTargeting.index);
     b.itemTargeting = null;
     render();
@@ -3545,33 +3559,39 @@ function drawSpecificOpeningCardBySeries(itemName, series) {
 function renderBattle() {
   const b = state.battle;
   const fame = currentFameLevel();
-  const fameLabel = `${fame.name}(${state.player.fameValue || 0})-${state.player.name}-${b.player.hp}/${b.player.maxHp}-${state.player.money}元`;
-  const enemySlots = [0, 1, 2].map((slot) => b.enemies[slot] ? renderBattleEnemySlot(b.enemies[slot]) : `<div class="battle-monster-card empty-enemy-slot">小怪${slot + 1}</div>`);
-  const handSlots = Array.from({ length: 12 }, (_, index) => b.hand[index] ? renderHandSlot(b.hand[index]) : `<div class="battle-hand-slot empty"></div>`);
+  const fameLabel = `${fame.name}(${state.player.fameValue || 0})-${state.player.name}`;
+  const visibleEnemies = battleVisibleEnemies(b);
+  const enemySlots = [0, 1, 2].map((slot) => visibleEnemies[slot] ? renderBattleEnemySlot(visibleEnemies[slot]) : `<div class="battle-monster-card empty-enemy-slot">小怪${slot + 1}</div>`);
+  const handSlots = Array.from({ length: 10 }, (_, index) => b.hand[index] ? renderHandSlot(b.hand[index]) : `<div class="battle-hand-slot empty"></div>`);
   app.innerHTML = `
     <main class="battle-screen">
       <section class="battle-desk">
+        <div class="battle-live-deco"><span>▶ LIVE</span><span>👁 1.2K</span></div>
         <div class="battle-top-status">
-          <div class="battle-status-text">${fameLabel}</div>
-          <button class="battle-deck-icon" data-run-deck-local title="查看本局遊戲當前牌組">牌組</button>
+          <div class="battle-hud-cell battle-fame-cell"><span class="hud-icon">✦</span><strong>${fameLabel}</strong></div>
+          <div class="battle-hud-cell battle-money-cell"><span class="hud-icon">$</span><strong>${state.player.money} 元</strong></div>
+          <div class="battle-hud-cell battle-hp-cell"><span class="hud-icon">♥</span><strong>${b.player.hp}/${b.player.maxHp}</strong></div>
         </div>
+        <button class="battle-deck-icon" data-run-deck-local title="查看本局遊戲當前牌組">牌組</button>
         ${renderBattleBossArea(b)}
-        <div class="battle-turn-label">回合 ${b.turn}/${b.isMinibossBattle ? "無限制" : b.maxTurns}</div>
-        <button class="battle-draw-pile-button" data-battle-draw-pile>牌庫剩餘 ${b.deck.length}</button>
+        <div class="battle-focus-orb" aria-hidden="true"></div>
+        <div class="battle-turn-label">回合倒數 ${b.turn}/${b.isMinibossBattle ? "∞" : b.maxTurns}</div>
+        <div class="battle-help-panel" aria-live="polite"></div>
+        <button class="battle-draw-pile-button" data-battle-draw-pile><span class="pile-zone-label">剩餘牌庫:${b.deck.length}</span></button>
         <div class="battle-enemy-slot enemy-slot-left">${enemySlots[0]}</div>
         <div class="battle-enemy-slot enemy-slot-center">${enemySlots[1]}</div>
         <div class="battle-enemy-slot enemy-slot-right">${enemySlots[2]}</div>
         <button class="battle-side-button battle-backpack-zone" data-battle-backpack>背包</button>
         <button class="battle-side-button battle-end-button" data-end ${b.phase !== "player" ? "disabled" : ""}>結束回合</button>
-        <button class="battle-side-button battle-discard-zone" data-battle-discard>棄牌堆<br><small>${b.discard.length}</small></button>
-        <div class="battle-energy-panel">能量 ${b.energy}/${b.maxEnergy}</div>
+        <button class="battle-side-button battle-discard-zone" data-battle-discard><span class="pile-zone-label">棄牌區:${b.discard.length}</span></button>
+        <div class="battle-energy-panel battle-help-keyword" data-help-title="能量值" data-help="當前能量，需要有足夠能量才能打出對應消耗卡牌。"><span>${b.energy}/${b.maxEnergy}</span></div>
         <div class="battle-hero">
           <img class="battle-hero-avatar" src="${assetPaths.chinchinkoBattleAvatar}" alt="親親子頭像" onerror="this.src='${assetPaths.chinchinkoProfile}'" />
           <div class="battle-unit-gauges hero-gauges">${renderBlockBadge(b.player)}${renderHeartBadge(b.player)}</div>
           <div class="hero-status-box">${renderHeroStatusBox(b.player)}</div>
           <div class="statuses battle-hero-statuses">
             ${b.player.charm ? renderCharmStatus(b.player) : ""}
-            ${b.player.attackDown ? `<span class="status broken-sword">🗡 ${b.player.attackDown}</span>` : ""}
+            ${b.player.attackDown ? `<span class="status broken-sword">攻傷 -${b.player.attackDown}</span>` : ""}
             ${b.player.noAttack ? `<span class="status">不能攻擊</span>` : ""}
             ${b.player.noDamage ? `<span class="status">不能造成傷害</span>` : ""}
             ${state.battle?.playerImmuneToEnemyDamage ? `<span class="status">敵傷無效</span>` : ""}
@@ -3584,6 +3604,7 @@ function renderBattle() {
           </div>
         </div>
         <div class="battle-log-panel">${b.log.map((line) => `<div>${line}</div>`).join("")}</div>
+        <div class="battle-card-preview-panel" data-hand-preview></div>
         <div class="battle-phase-label">${b.phase === "enemy" ? "敵方行動中" : "親親子行動"}</div>
         <div class="battle-reserve-label">剩餘小怪 ${b.enemyReserve || 0}</div>
       </section>
@@ -3643,6 +3664,8 @@ function renderBattle() {
     };
   });
   attachBattleOverlays();
+  attachBattleKeywordHelp();
+  attachHandCardPreview();
   app.querySelectorAll("[data-card]").forEach((el) => {
     el.onclick = () => {
       b.selectedAttacker = null;
@@ -3677,33 +3700,33 @@ function renderBattle() {
     state.battle = null;
     render();
   });
+  scrollBattleLogToLatest();
+}
+
+function battleVisibleEnemies(b) {
+  if (b.isMinibossBattle && b.boss?.hp > 0) {
+    const liveSmall = b.enemies.filter((unit) => unit.hp > 0);
+    return [liveSmall[0] || null, b.boss, liveSmall[1] || null];
+  }
+  return b.enemies.slice(0, 3);
+}
+
+function scrollBattleLogToLatest() {
+  requestAnimationFrame(() => {
+    const panel = app.querySelector(".battle-log-panel");
+    if (panel) panel.scrollTop = panel.scrollHeight;
+  });
 }
 
 function renderBattleBossArea(b) {
-  if (!b.isMinibossBattle || !b.boss) return "";
-  const traitBadges =
-    (b.boss.traits?.length)
-      ? `<div class="trait-badges">${b.boss.traits
-          .map((trait) => `<span class="trait-badge">${trait}<span class="trait-tooltip"><strong>${trait}</strong><br>${traitDescription(b.boss, trait)}</span></span>`)
-          .join("")}</div>`
-      : `<span>無特性</span>`;
-  return `
-    <div class="battle-boss-info ${b.boss.hp > 0 ? "targetable" : ""}" data-unit="${b.boss.id}">
-      <div class="battle-boss-text">
-        <strong>${b.boss.name}</strong>
-        ${traitBadges}
-        <div class="statuses battle-boss-statuses">${renderUnitStatuses(b.boss)}</div>
-        <span>攻擊 ${b.boss.attack}</span>
-      </div>
-      <div class="battle-boss-avatar">${b.boss.image ? `<img src="${b.boss.image}" alt="${b.boss.name}" />` : "BOSS"}</div>
-      <div class="battle-unit-gauges boss-gauges">${renderAttackBadge(b.boss)}${renderBlockBadge(b.boss)}${renderHeartBadge(b.boss)}</div>
-    </div>`;
+  return "";
 }
 
 function renderHeroStatusBox(player) {
   const statuses = [];
+  if (new URLSearchParams(window.location.search).get("test") === "battle") statuses.push("狀態 測試");
   if (player.charm) statuses.push(`魅惑 ${player.charm}`);
-  if (player.attackDown) statuses.push(`攻擊下降 ${player.attackDown}`);
+  if (player.attackDown) statuses.push(`攻擊傷害下降 ${player.attackDown}`);
   if (player.noAttack) statuses.push("不能攻擊");
   if (player.noDamage) statuses.push("不能造成傷害");
   if (state.battle?.playerImmuneToEnemyDamage) statuses.push("敵傷無效");
@@ -3716,20 +3739,20 @@ function renderHeroStatusBox(player) {
   if (state.battle?.powers?.scissorLove) statuses.push("剪愛");
   if (state.battle?.powers?.donationFee) statuses.push("斗內費");
   if (state.battle?.powers?.lifeCharm) statuses.push("生命魅惑");
-  return statuses.length ? statuses.map((text) => `<span>${text}</span>`).join("") : `<span>無狀態</span>`;
+  return statuses.length ? statuses.map((text) => `<span>${text}</span>`).join("") : "";
 }
 
 function renderUnitStatuses(unit) {
   if (!unit) return "";
   return `
-    ${unit.taunt ? `<span class="status">嘲諷</span>` : ""}
+    ${unit.taunt ? battleHelpTag("嘲諷", "status") : ""}
     ${unit.charm ? renderCharmStatus(unit) : ""}
-    ${unit.attackDown ? `<span class="status broken-sword">🗡 ${unit.attackDown}</span>` : ""}
+    ${unit.attackDown ? `<span class="status broken-sword">攻傷 -${unit.attackDown}</span>` : ""}
     ${unit.tempAttackBuff ? `<span class="status">暫攻 +${unit.tempAttackBuff}</span>` : ""}
     ${unit.noAttack ? `<span class="status">不能攻擊</span>` : ""}
     ${unit.noDamage ? `<span class="status">不能造成傷害</span>` : ""}
     ${unit.lovePreacherMark ? `<span class="status">被標記</span>` : ""}
-    ${unit.counterStance ? `<span class="status status-with-tooltip">反擊姿態<span class="status-tooltip">受到攻擊時，攻擊者受到 ${enemyIntentAttack(unit)} 點傷害。</span></span>` : ""}
+    ${unit.counterStance ? battleHelpTag("反擊姿態", "status") : ""}
   `;
 }
 
@@ -3741,19 +3764,19 @@ function renderBattleEnemySlot(unit) {
   const traitBadges =
     (unit.traits?.length)
       ? `<div class="trait-badges">${unit.traits
-          .map((trait) => `<span class="trait-badge">${trait}<span class="trait-tooltip"><strong>${trait}</strong><br>${traitDescription(unit, trait)}</span></span>`)
+          .map((trait) => battleHelpTag(trait, "trait-badge", traitDescription(unit, trait)))
           .join("")}</div>`
       : "";
   return `
     <article class="battle-monster-card ${isDead ? "dead" : ""} ${targetable && !isDead ? "targetable" : ""} ${active ? "active-attacker" : ""}" data-unit="${unit.id}">
-      <div class="battle-monster-portrait">${monsterPortraitSvg(unit)}</div>
+      <div class="battle-monster-portrait">${unit.image ? `<img src="${unit.image}" alt="${unit.name}" />` : monsterPortraitSvg(unit)}</div>
       <div class="battle-monster-info">
         <h3>${unit.name}</h3>
         ${traitBadges}
+        ${intent ? `<p class="intent">意圖：${renderIntentHelp(intent)}</p>` : ""}
         <div class="statuses battle-monster-statuses">${renderUnitStatuses(unit)}</div>
-        ${intent ? `<p class="intent">意圖：${intent}</p>` : ""}
       </div>
-      <div class="battle-unit-gauges monster-gauges">${renderAttackBadge(unit)}${renderBlockBadge(unit)}${renderHeartBadge(unit)}</div>
+      <div class="battle-unit-gauges monster-gauges">${renderBlockBadge(unit)}${renderHeartBadge(unit)}</div>
     </article>`;
 }
 
@@ -3775,26 +3798,67 @@ function hashString(text) {
 }
 
 function renderBlockBadge(unit) {
-  return `<span class="battle-block-badge battle-stat-badge">` +
-    `${unit.block || 0}<span class="battle-stat-tooltip">目前防禦值。受到傷害時會優先抵擋。</span></span>`;
-}
-
-function renderAttackBadge(unit) {
-  return `<span class="battle-attack-badge battle-stat-badge">` +
-    `${unit.baseAttack ?? unit.attack ?? 0}<span class="battle-stat-tooltip">基礎攻擊。敵方意圖會依照此數值計算。</span></span>`;
+  return `<span class="battle-block-badge battle-stat-badge battle-help-keyword" data-help-title="防禦值" data-help="目前防禦值。受到傷害時會優先抵擋。">` +
+    `<span class="battle-stat-value">${unit.block || 0}</span></span>`;
 }
 
 function renderHeartBadge(unit) {
-  return `<span class="battle-heart-badge battle-stat-badge">` +
-    `${unit.hp}/${unit.maxHp}<span class="battle-stat-tooltip">目前生命 / 最大生命。</span></span>`;
+  return `<span class="battle-heart-badge battle-stat-badge battle-help-keyword" data-help-title="生命值" data-help="目前生命 / 最大生命。生命歸零時會被擊倒。">` +
+    `<span class="battle-stat-value">${unit.hp}/${unit.maxHp}</span></span>`;
 }
 
 function renderCharmStatus(unit) {
-  return `<span class="status status-with-tooltip charm-status">魅惑 ${unit.charm}<span class="status-tooltip">當魅惑累積量大於等於怪物剩餘生命時馬上觸發，親親子擊倒該敵人。</span></span>`;
+  return `<span class="status charm-status battle-help-keyword" data-help-title="魅惑" data-help="${escapeAttr(keywordDescriptions["魅惑"])}">魅惑 ${unit.charm}</span>`;
+}
+
+function renderIntentHelp(intentText) {
+  const text = String(intentText || "");
+  const term = Object.keys(battleKeywordDescriptions).find((key) => text === key || text.startsWith(`${key} `));
+  if (!term) return escapeHtml(text);
+  const rest = text.slice(term.length);
+  return `${battleHelpTag(term, "battle-help-keyword")}${escapeHtml(rest)}`;
+}
+
+function battleHelpTag(term, className = "status", overrideDescription = "") {
+  const description = overrideDescription || battleKeywordDescriptions[term] || "";
+  const helpAttrs = description
+    ? ` data-help-title="${escapeAttr(term)}" data-help="${escapeAttr(description)}"`
+    : "";
+  return `<span class="${className} battle-help-keyword"${helpAttrs}>${term}</span>`;
+}
+
+function attachBattleKeywordHelp() {
+  const panel = app.querySelector(".battle-help-panel");
+  if (!panel) return;
+  panel.textContent = "";
+  app.querySelectorAll(".battle-help-keyword[data-help]").forEach((el) => {
+    el.addEventListener("mouseenter", () => {
+      const title = el.dataset.helpTitle || el.textContent || "";
+      const text = el.dataset.help || "";
+      panel.innerHTML = `<strong>${escapeHtml(title)}</strong><br>${escapeHtml(text)}`;
+    });
+    el.addEventListener("mouseleave", () => {
+      panel.textContent = "";
+    });
+  });
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/"/g, "&quot;");
 }
 
 function renderHandSlot(card) {
   return `<div class="battle-hand-slot filled">${renderHandCard(card)}</div>`;
+}
+
+function compactHandCardName(name) {
+  const safeName = escapeHtml(name || "");
+  const chars = [...safeName];
+  const lines = [];
+  for (let i = 0; i < chars.length; i += 3) {
+    lines.push(chars.slice(i, i + 3).join(""));
+  }
+  return lines.join("<br>");
 }
 
 function renderBattlePileOverlay(title, pile, closeAttr) {
@@ -3879,15 +3943,15 @@ function renderCombatUnit(unit) {
         <div class="bar block"><span style="width:${Math.min(100, (unit.block / Math.max(1, unit.maxHp)) * 100)}%"></span></div>
       </div>
       <div class="statuses">
-        ${unit.taunt ? `<span class="status">嘲諷</span>` : ""}
+        ${unit.taunt ? battleHelpTag("嘲諷", "status") : ""}
         ${unit.charm ? renderCharmStatus(unit) : ""}
-        ${unit.attackDown ? `<span class="status broken-sword">🗡 ${unit.attackDown}</span>` : ""}
+        ${unit.attackDown ? `<span class="status broken-sword">攻傷 -${unit.attackDown}</span>` : ""}
         ${unit.tempAttackBuff ? `<span class="status">暫攻 +${unit.tempAttackBuff}</span>` : ""}
         ${unit.noAttack ? `<span class="status">不能攻擊</span>` : ""}
         ${unit.noDamage ? `<span class="status">不能造成傷害</span>` : ""}
         ${unit.id === "player" && state.battle?.playerImmuneToEnemyDamage ? `<span class="status">敵傷無效</span>` : ""}
         ${unit.lovePreacherMark ? `<span class="status">被標記</span>` : ""}
-        ${unit.counterStance ? `<span class="status status-with-tooltip">反擊姿態<span class="status-tooltip">受到攻擊時，攻擊者受到 ${enemyIntentAttack(unit)} 點傷害。</span></span>` : ""}
+        ${unit.counterStance ? `<span class="status status-with-tooltip">反擊姿態<span class="status-tooltip">受到攻擊時，攻擊者受到 ${enemyAttackDamage(unit, 1, false)} 點傷害。</span></span>` : ""}
         ${unit.acted ? `<span class="status">已行動</span>` : ""}
       </div>
       ${traitBadges}
@@ -3936,7 +4000,7 @@ function applyReportEntrance(enemy) {
   if (!candidates.length) return;
   const target = sample(candidates);
   addAttackDown(target, 2, "enemy");
-  log(`${enemy.name} 的檢舉幫發動，${target.name} 攻擊下降 2。`);
+  log(`${enemy.name} 的檢舉幫發動，${target.name} 攻擊傷害下降 2。`);
 }
 
 function applyProfessionalSupportEntrance(enemy) {
@@ -3965,13 +4029,38 @@ function applyCopycatTrait(enemy) {
 function renderHandCard(card) {
   const b = state.battle;
   return `
-    <article class="battle-card ${b.selectedCard === card.id ? "selected" : ""}" data-card="${card.id}">
-      <span class="pill">${effectiveCardCost(card)} 能量</span>
-      <h3>${card.name}</h3>
-      <p>${card.type}</p>
-      <p>${cardText(card)}</p>
-      ${renderBlessingBadge(card)}
+    <article class="battle-card hand-card-compact ${b.selectedCard === card.id ? "selected" : ""}" data-card="${card.id}">
+      <span class="hand-card-cost">${effectiveCardCost(card)}耗能</span>
+      <span class="hand-card-name">${compactHandCardName(card.name)}</span>
     </article>`;
+}
+
+function renderBattleCardPreview(card) {
+  if (!card) return "";
+  return `
+    <div class="preview-cost">${effectiveCardCost(card)} 能量</div>
+    <h3>${escapeHtml(card.name)}</h3>
+    ${card.type ? `<p class="preview-type">${escapeHtml(card.type)}</p>` : `<p class="preview-type">無系列</p>`}
+    <p>${keywordText(cardText(card))}</p>
+    ${card.upgraded && card.upgradeText ? `<p class="preview-upgrade">升級效果：${keywordText(card.upgradeText)}</p>` : ""}
+    ${renderBlessingBadge(card)}`;
+}
+
+function attachHandCardPreview() {
+  const panel = app.querySelector("[data-hand-preview]");
+  const b = state.battle;
+  if (!panel || !b) return;
+  app.querySelectorAll("[data-card]").forEach((el) => {
+    el.addEventListener("mouseenter", () => {
+      const card = b.hand.find((entry) => entry.id === el.dataset.card);
+      panel.innerHTML = renderBattleCardPreview(card);
+      panel.classList.add("visible");
+    });
+    el.addEventListener("mouseleave", () => {
+      panel.classList.remove("visible");
+      panel.innerHTML = "";
+    });
+  });
 }
 
 function renderDeckChoiceOverlay() {
@@ -4065,7 +4154,7 @@ function renderDeckOverlay() {
         <div class="topbar">
           <div>
             <h2>目前牌組</h2>
-            ${isBattleDeck ? `<p class="subtle">本局遊戲目前牌組總覽，與戰鬥中的牌庫剩餘、棄牌堆分開顯示。</p>` : ""}
+            ${isBattleDeck ? `<p class="subtle">本局遊戲牌組</p>` : ""}
           </div>
           <button class="ghost-button" data-close-deck>關閉</button>
         </div>
@@ -4337,8 +4426,9 @@ function performAttack(attacker, target) {
   log(`${attacker.name} 攻擊 ${target.name}，造成 ${attacker.attack} 點傷害。`);
   damage(target, attacker.attack, attacker);
   if (canCounter(target)) {
-    log(`${target.name} 反擊姿態觸發，造成 ${target.attack} 點傷害。`);
-    damage(attacker, target.attack, target);
+    const counterDamage = enemyAttackDamage(target);
+    log(`${target.name} 反擊姿態觸發，造成 ${counterDamage} 點傷害。`);
+    damage(attacker, counterDamage, target);
   }
   afterUnitAttack(attacker);
   afterAttackDamage();
@@ -4351,7 +4441,7 @@ function dealAttack(target, amount, sourceName) {
   }
   if (state.battle.player.attackDown) {
     amount = Math.max(0, amount - state.battle.player.attackDown);
-    log(`攻擊下降，攻擊傷害 -${state.battle.player.attackDown}。`);
+    log(`攻擊傷害下降，攻擊傷害 -${state.battle.player.attackDown}。`);
   }
   if (state.battle.activeCardDamageBonus) {
     amount += state.battle.activeCardDamageBonus;
@@ -4383,8 +4473,9 @@ function dealAttack(target, amount, sourceName) {
     log(`消費天才觸發，獲得 ${money} 元。`);
   }
   if (canCounter(target)) {
-    log(`${target.name} 反擊姿態觸發，造成 ${target.attack} 點傷害。`);
-    damage(state.battle.player, target.attack, target);
+    const counterDamage = enemyAttackDamage(target);
+    log(`${target.name} 反擊姿態觸發，造成 ${counterDamage} 點傷害。`);
+    damage(state.battle.player, counterDamage, target);
   }
   afterAttackDamage();
   return dealt;
@@ -4502,8 +4593,8 @@ function damage(target, amount, source = null) {
       b.smokeCharmTriggers -= 1;
     }
   }
-  const adjustedText = originalAmount !== amount ? `原始 ${originalAmount}，調整後 ${amount}；` : "";
-  log(`${target.name} 傷害結算：${adjustedText}防禦抵擋 ${blocked} 點，生命減少 ${hpDamage} 點（${hpBeforeDamage}→${target.hp}）。`);
+  if (blocked > 0) log(`${target.name} 防禦抵擋 ${blocked} 點傷害。`);
+  log(`${target.name} 生命減少 ${hpDamage} 點（${hpBeforeDamage}→${target.hp}）。`);
   checkCharmExecute(target);
   if (target.hp <= 0) {
     handleUnitDefeated(target);
@@ -4530,7 +4621,7 @@ function addCharm(target, amount) {
   if (charmBonus) log(`擦邊主播使魅惑給予量 +${charmBonus}（${originalAmount}→${amount}）。`);
   const beforeCharm = target.charm || 0;
   target.charm = (target.charm || 0) + amount;
-  log(`魅惑結算：給予 ${target.name} ${amount} 魅惑（${beforeCharm}→${target.charm}），目前生命 ${target.hp}/${target.maxHp}。`);
+  log(`給予 ${target.name} ${amount} 魅惑（${beforeCharm}→${target.charm}）。`);
   if (state.battle?.powers?.lifeCharm && target.side === "enemy" && amount > 0) {
     target.hp = Math.max(0, target.hp - amount);
     heal(state.battle.player, amount);
@@ -4556,7 +4647,7 @@ function cleanseRandomPlayerDebuff() {
   const picked = sample(debuffs);
   if (picked === "attackDown") {
     player.attackDown = 0;
-    log("透心涼茶淨化了攻擊下降。");
+    log("透心涼茶淨化了攻擊傷害下降。");
   }
   if (picked === "noAttack") {
     player.noAttack = false;
@@ -4687,13 +4778,12 @@ function addTemporaryAttack(target, amount) {
 }
 
 function addAttackDown(target, amount, sourceSide = "ally") {
-  if (sourceSide === "ally" && kutaVoiceNegatesDebuff(target, "攻擊下降")) return;
+  if (sourceSide === "ally" && kutaVoiceNegatesDebuff(target, "攻擊傷害下降")) return;
   if (target.fixedAttack !== undefined || hasTrait(target, "廠商爸爸")) {
     enforceFixedAttack(target);
     return;
   }
   target.attackDown = (target.attackDown || 0) + amount;
-  if (target.id !== "player") target.attack = Math.max(0, target.attack - amount);
 }
 
 function clearTemporaryAttackBuffs() {
@@ -4712,7 +4802,6 @@ function clearRoundTemporaryStatuses() {
       unit.tempAttackBuff = 0;
     }
     if (unit.attackDown) {
-      if (unit.id !== "player") unit.attack += unit.attackDown;
       unit.attackDown = 0;
     }
     unit.noAttack = false;
@@ -4795,6 +4884,7 @@ function enemyTurn() {
       enemy.hp = 0;
     });
     fillEnemySlots();
+    applyEnemyEndOfTurnTraits();
     grantSponsorEndTurnMoney();
     clearRoundTemporaryStatuses();
     checkWinLose();
@@ -4810,6 +4900,15 @@ function grantSponsorEndTurnMoney() {
   const amount = sponsors.length * 100;
   state.player.money += amount;
   sponsors.forEach((enemy) => log(`${enemy.name} 的大乾爹給予你 100 元。`));
+}
+
+function applyEnemyEndOfTurnTraits() {
+  const b = state.battle;
+  b.enemies.filter((enemy) => enemy.hp > 0).forEach((enemy) => {
+    if (enemy.traits?.includes("肥宅")) heal(enemy, 3);
+    if (enemy.traits?.includes("危險斗內份子") && enemy.hp > 0) damage(enemy, 4);
+  });
+  fillEnemySlots();
 }
 
 function runEnemyAction(enemy) {
@@ -4903,8 +5002,7 @@ function reduceKutaBiggestDebuff(kuta) {
   const picked = debuffs[0];
   const reduce = Math.min(3, picked.value);
   kuta[picked.key] = Math.max(0, picked.value - reduce);
-  if (picked.key === "attackDown") kuta.attack += reduce;
-  log(`久田的專業主播使 ${picked.key === "charm" ? "魅惑" : "攻擊下降"} 減少 ${reduce}。`);
+  log(`久田的專業主播使 ${picked.key === "charm" ? "魅惑" : "攻擊傷害下降"} 減少 ${reduce}。`);
 }
 
 function reincarnateToKutaFan() {
@@ -4961,7 +5059,11 @@ function goblinAttack(enemy, multiplier) {
     log(`${enemy.name} 的親親幫回復 ${target.name} 3 點生命。`);
     return;
   }
-  const amount = enemy.noDamage ? 0 : Math.max(0, Math.ceil(enemyIntentAttack(enemy) * multiplier) - (state.battle.enemyDamageReduction || 0));
+  const beforeGlobalReduction = enemy.noDamage ? 0 : enemyAttackDamage(enemy, multiplier);
+  const amount = Math.max(0, beforeGlobalReduction - (state.battle.enemyDamageReduction || 0));
+  if (state.battle.enemyDamageReduction && beforeGlobalReduction !== amount) {
+    log(`敵方攻擊傷害減少 ${state.battle.enemyDamageReduction}（${beforeGlobalReduction}→${amount}）。`);
+  }
   log(`${enemy.name}${multiplier > 1 ? " 使用重擊" : " 攻擊"} ${target.name}，造成 ${amount} 點傷害。`);
   damage(target, amount, enemy);
 }
@@ -5031,8 +5133,6 @@ function startPlayerTurn() {
 function applyEnemyStartOfTurnTraits() {
   const b = state.battle;
   b.enemies.filter((enemy) => enemy.hp > 0).forEach((enemy) => {
-    if (enemy.traits?.includes("危險斗內份子")) damage(enemy, 4);
-    if (enemy.traits?.includes("肥宅")) heal(enemy, 3);
     if (enemy.traits?.includes("釣魚高手")) {
       const targets = [b.player, ...b.enemies].filter((unit) => unit.hp > 0);
       const picked = sample(targets);
@@ -5063,9 +5163,33 @@ function enemyIntent(enemy) {
   return `攻擊 ${enemyIntentAmount(enemy, "attack")}`;
 }
 
+function enemyIntentTypeLabel(enemy, intent = enemy?.intent) {
+  if (enemy?.traits?.includes("丟球高手")) return "自爆";
+  if (intent === "world") return "世界";
+  if (intent === "thigh") return "露大腿";
+  if (intent === "reincarnate") return "轉生";
+  if (intent === "defend") return "防守";
+  if (intent === "counter") return "反擊";
+  if (intent === "heavy") return "重擊";
+  if (intent === "seasick") return "暈船";
+  if (intent === "coverEars") return "摀住耳朵";
+  if (intent === "knockdown") return "倒地";
+  if (intent === "lost") return "迷路";
+  return "攻擊";
+}
+
 function enemyIntentAttack(enemy) {
   if (enemy?.fixedAttack !== undefined) return enemy.fixedAttack;
   return Math.max(0, enemy?.attack ?? enemy?.baseAttack ?? 0);
+}
+
+function enemyAttackDamage(enemy, multiplier = 1, shouldLog = true) {
+  const raw = Math.ceil(enemyIntentAttack(enemy) * multiplier);
+  const reduced = Math.max(0, raw - (enemy?.attackDown || 0));
+  if (shouldLog && enemy?.attackDown && raw !== reduced) {
+    log(`${enemy.name} 攻擊傷害下降 ${enemy.attackDown}（${raw}→${reduced}）。`);
+  }
+  return reduced;
 }
 
 function enemyHeavyMultiplier(enemy) {
@@ -5073,18 +5197,25 @@ function enemyHeavyMultiplier(enemy) {
 }
 
 function enemyIntentAmount(enemy, intent = enemy?.intent) {
-  const base = enemyIntentAttack(enemy);
-  if (intent === "heavy") return Math.ceil(base * enemyHeavyMultiplier(enemy));
-  return Math.ceil(base);
+  if (intent === "defend") return Math.ceil(enemyIntentAttack(enemy));
+  if (intent === "heavy") return enemyAttackDamage(enemy, enemyHeavyMultiplier(enemy), false);
+  if (intent === "attack" || intent === "counter") return enemyAttackDamage(enemy, 1, false);
+  return Math.ceil(enemyIntentAttack(enemy));
 }
 
 function setEnemyIntent(enemy, intent, options = {}) {
   if (!enemy || enemy.hp <= 0) return;
+  const before = enemy.intent;
+  const beforeType = enemyIntentTypeLabel(enemy, before);
   enemy.intent = intent;
   enemy.intentTargetId = options.intentTargetId || null;
   enemy.seasickNoPlayer = Boolean(options.seasickNoPlayer);
   enemy.counterStance = intent === "counter";
   if (options.persistNextTurn) enemy.intentPersistsNextTurn = true;
+  const afterType = enemyIntentTypeLabel(enemy, intent);
+  if (state.battle && before && beforeType !== afterType && options.log !== false) {
+    log(`${enemy.name} 的意圖由${beforeType}變更為${afterType}。`);
+  }
 }
 
 function assignEnemyIntents() {
@@ -5096,7 +5227,7 @@ function assignEnemyIntents() {
       enemy.counterStance = enemy.intent === "counter";
       return;
     }
-    setEnemyIntent(enemy, rollEnemyIntent());
+    setEnemyIntent(enemy, rollEnemyIntent(), { log: false });
   });
 }
 
@@ -5113,7 +5244,7 @@ function assignKutaIntent(kuta) {
   const cycle = kuta.intentCycle || ["thigh", "attack", "world", "reincarnate", "defend"];
   const intent = cycle[kuta.intentCycleIndex % cycle.length];
   kuta.intentCycleIndex = (kuta.intentCycleIndex || 0) + 1;
-  setEnemyIntent(kuta, intent);
+  setEnemyIntent(kuta, intent, { log: false });
 }
 
 function applyDrawnMapConfusion() {
@@ -5121,7 +5252,7 @@ function applyDrawnMapConfusion() {
   if (!state.player?.items?.includes("亂畫的地圖") || b.drawnMapUsed) return;
   const target = b.enemies.find((enemy) => enemy.hp > 0 && (enemy.intent === "attack" || enemy.intent === "heavy"));
   if (!target) return;
-  setEnemyIntent(target, "lost", { persistNextTurn: true });
+  setEnemyIntent(target, "lost", { persistNextTurn: true, log: false });
   b.drawnMapUsed = true;
   log(`亂畫的地圖觸發，${target.name} 的意圖轉為迷路。`);
 }
