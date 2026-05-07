@@ -37,6 +37,8 @@ const assetPaths = {
   supportT1vBadge: "assets/support-t1v-badge.png",
   uglyPillow: "assets/ugly-pillow.png",
   kutaBoss: "assets/kuta-boss.png",
+  settlementRoom: "assets/settlement-room.png?v=20260507-1",
+  postBattleRoom: "assets/postbattle-room.png?v=20260507-1",
 };
 
 function imageWithFallback(src, alt, className, fallback = "") {
@@ -2122,6 +2124,14 @@ function createBattleTestRun() {
   startBattle();
 }
 
+function createBattleEndTestRun() {
+  createBattleTestRun();
+  if (!state.battle) return;
+  state.battle.turn = state.battle.maxTurns || 5;
+  state.battle.phase = "readyToFinish";
+  state.battle.log.push("測試模式：已跳到第五回合怪物行動完畢。");
+}
+
 function createMinibossTestRun() {
   state.player = createPlayer();
   state.player.fameValue = 45;
@@ -2149,6 +2159,26 @@ function createEventTestRun() {
     fameReward: 0,
     actionsLeft: 99,
     log: ["事件測試模式：已跳過戰鬥，可直接外出閒逛測試事件。"],
+  };
+  state.screen = "postbattle";
+}
+
+function createPostBattleTestRun() {
+  state.player = createPlayer();
+  state.player.fameValue = 20;
+  state.player.money = 5000;
+  addRewardToBackpack(shopItems["手槍"]);
+  addRewardToBackpack(eventItems["三色豆水餃"]);
+  state.postBattle = {
+    battleIndex: 1,
+    result: "won",
+    recovered: 0,
+    rawMoney: 1200,
+    moneyRate: 1,
+    moneyReward: 1200,
+    fameReward: 6,
+    actionsLeft: 2,
+    log: ["親親子結束了第 1 場直播。", "獲得金錢 1200 元，名氣值提高 6 點。"],
   };
   state.screen = "postbattle";
 }
@@ -2338,6 +2368,7 @@ function render() {
   if (state.screen === "minibossSelect") renderMinibossSelect();
   if (state.screen === "shop") renderShop();
   if (state.screen === "rebuild") renderRebuildNotice();
+  if (state.screen === "battleSettlement") renderBattleSettlement();
   if (state.screen === "postbattle") renderPostBattle();
   if (state.screen === "cardReward") renderCardReward();
   if (state.screen === "upgrade") renderUpgradeCards();
@@ -2354,7 +2385,7 @@ function renderFameBadge() {
   document.querySelector(".global-deck-overlay")?.remove();
   document.querySelector(".global-backpack-overlay")?.remove();
   document.querySelector(".floating-backpack-button")?.remove();
-  const visibleScreens = ["supportBriefing", "cardReward", "postbattle", "upgrade", "event", "blessing", "rebuild", "shop", "removeCard", "minibossSelect", "shopIntroStory", "minibossPrelude"];
+  const visibleScreens = ["supportBriefing", "cardReward", "upgrade", "event", "blessing", "rebuild", "shop", "removeCard", "minibossSelect", "shopIntroStory", "minibossPrelude"];
   const shouldShow = Boolean(state.player && visibleScreens.includes(state.screen));
   document.body.classList.toggle("has-run-status", shouldShow);
   if (!shouldShow) {
@@ -2473,7 +2504,9 @@ function renderTitle() {
 
 function initializeApp() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get("test") === "battle") {
+  if (params.get("test") === "battle-end") {
+    createBattleEndTestRun();
+  } else if (params.get("test") === "battle") {
     createBattleTestRun();
   } else if (params.get("test") === "miniboss") {
     createMinibossTestRun();
@@ -2481,6 +2514,8 @@ function initializeApp() {
     createShopTestRun();
   } else if (params.get("test") === "events") {
     createEventTestRun();
+  } else if (params.get("test") === "postbattle") {
+    createPostBattleTestRun();
   }
   render();
 }
@@ -3563,6 +3598,8 @@ function renderBattle() {
   const visibleEnemies = battleVisibleEnemies(b);
   const enemySlots = [0, 1, 2].map((slot) => visibleEnemies[slot] ? renderBattleEnemySlot(visibleEnemies[slot]) : `<div class="battle-monster-card empty-enemy-slot">小怪${slot + 1}</div>`);
   const handSlots = Array.from({ length: 10 }, (_, index) => b.hand[index] ? renderHandSlot(b.hand[index]) : `<div class="battle-hand-slot empty"></div>`);
+  const isReadyToFinishBattle = b.phase === "readyToFinish";
+  const endButtonText = isReadyToFinishBattle ? "結束直播" : "結束回合";
   app.innerHTML = `
     <main class="battle-screen">
       <section class="battle-desk">
@@ -3582,7 +3619,7 @@ function renderBattle() {
         <div class="battle-enemy-slot enemy-slot-center">${enemySlots[1]}</div>
         <div class="battle-enemy-slot enemy-slot-right">${enemySlots[2]}</div>
         <button class="battle-side-button battle-backpack-zone" data-battle-backpack>背包</button>
-        <button class="battle-side-button battle-end-button" data-end ${b.phase !== "player" ? "disabled" : ""}>結束回合</button>
+        <button class="battle-side-button battle-end-button" data-end ${b.phase !== "player" && !isReadyToFinishBattle ? "disabled" : ""}>${endButtonText}</button>
         <button class="battle-side-button battle-discard-zone" data-battle-discard><span class="pile-zone-label">棄牌區:${b.discard.length}</span></button>
         <div class="battle-energy-panel battle-help-keyword" data-help-title="能量值" data-help="當前能量，需要有足夠能量才能打出對應消耗卡牌。"><span>${b.energy}/${b.maxEnergy}</span></div>
         <div class="battle-hero">
@@ -3616,7 +3653,7 @@ function renderBattle() {
     ${b.showDrawPile ? renderBattlePileOverlay("牌庫剩餘", b.deck, "data-close-draw-pile") : ""}
     ${b.showDiscard ? renderBattlePileOverlay("棄牌堆", b.discard, "data-close-discard") : ""}`;
 
-  app.querySelector("[data-end]")?.addEventListener("click", endPlayerTurn);
+  app.querySelector("[data-end]")?.addEventListener("click", handleBattleEndButton);
   app.querySelector("[data-battle-backpack]")?.addEventListener("click", () => {
     state.showBackpack = true;
     state.showRunDeck = false;
@@ -4863,6 +4900,17 @@ function endPlayerTurn() {
   enemyTurn();
 }
 
+function handleBattleEndButton() {
+  const b = state.battle;
+  if (!b) return;
+  if (b.phase === "readyToFinish") {
+    b.phase = "won";
+    finishBattle();
+    return;
+  }
+  endPlayerTurn();
+}
+
 function enemyTurn() {
   const b = state.battle;
   b.phase = "enemy";
@@ -4888,6 +4936,15 @@ function enemyTurn() {
     grantSponsorEndTurnMoney();
     clearRoundTemporaryStatuses();
     checkWinLose();
+    if (b.phase === "won" || b.phase === "lost") {
+      render();
+      return;
+    }
+    if (!b.isMinibossBattle && b.maxTurns && b.turn >= b.maxTurns) {
+      b.phase = "readyToFinish";
+      render();
+      return;
+    }
     const enemySideAlive = b.enemies.some((e) => e.hp > 0) || (b.boss?.hp > 0);
     if (b.player.hp > 0 && enemySideAlive) startPlayerTurn();
     else render();
@@ -5357,9 +5414,111 @@ function finishBattle() {
   }
   if (b.battleIndex === 1 && triggerGraduationCheck("tutorial")) return;
   state.cardRewardChoices = generateCardRewardChoices();
-  state.screen = "cardReward";
+  state.selectedRewardCard = null;
+  state.showCardRewardModal = false;
+  state.screen = "battleSettlement";
   state.battle = null;
   render();
+}
+
+function renderBattleSettlement() {
+  const post = state.postBattle || { moneyReward: 0, fameReward: 0 };
+  const choices = state.cardRewardChoices || [];
+  const fame = currentFameLevel();
+  const fameLabel = `${fame.name}(${state.player.fameValue || 0})-${state.player.name}`;
+  app.innerHTML = `
+    <main class="settlement-screen">
+      <section class="settlement-stage">
+        <img class="settlement-bg" src="${assetPaths.settlementRoom}" alt="直播結算畫面" onerror="this.closest('.settlement-stage').classList.add('fallback')" />
+        <div class="settlement-fallback-bg" aria-hidden="true"></div>
+        <div class="settlement-top-status">
+          <span class="settlement-fame">${fameLabel}</span>
+          <span class="settlement-money">${state.player.money}元</span>
+          <span class="settlement-hp">${state.player.hp}/${state.player.maxHp}</span>
+        </div>
+        <div class="settlement-text-box">
+          <p>直播結束</p>
+          <p>獲得金錢${post.moneyReward || 0} 名氣${post.fameReward || 0}</p>
+          <p>請選擇卡牌獎勵</p>
+          <button class="settlement-claim-button" data-open-reward-modal>點此領取</button>
+        </div>
+        <button class="settlement-side-button settlement-deck-button" data-settlement-deck>牌組</button>
+        <button class="settlement-side-button settlement-backpack-button" data-settlement-backpack>背包</button>
+        ${state.showCardRewardModal ? renderCardRewardModal(choices) : ""}
+      </section>
+      ${state.showRunDeck ? renderDeckOverlay() : ""}
+      ${state.showBackpack ? renderBackpackOverlay() : ""}
+    </main>`;
+  app.querySelector("[data-open-reward-modal]")?.addEventListener("click", () => {
+    state.showCardRewardModal = true;
+    state.selectedRewardCard = null;
+    render();
+  });
+  app.querySelector("[data-settlement-deck]")?.addEventListener("click", () => {
+    state.showRunDeck = true;
+    state.showBackpack = false;
+    render();
+  });
+  app.querySelector("[data-settlement-backpack]")?.addEventListener("click", () => {
+    state.showBackpack = true;
+    state.showRunDeck = false;
+    render();
+  });
+  attachBattleOverlays();
+  attachCardRewardModalEvents();
+}
+
+function renderCardRewardModal(choices) {
+  return `
+    <div class="settlement-card-modal">
+      <button class="settlement-skip-button" data-skip-card-reward>放棄選擇</button>
+      <div class="settlement-card-grid">
+        ${choices.map(({ rarity, card }, index) => renderSettlementRewardCard(card, rarity, index)).join("")}
+      </div>
+      <button class="primary-button settlement-confirm-button" data-confirm-card-reward ${state.selectedRewardCard === null ? "disabled" : ""}>確定選擇</button>
+    </div>`;
+}
+
+function renderSettlementRewardCard(card, rarity, index) {
+  const selected = state.selectedRewardCard === index;
+  return `
+    <article class="pool-card settlement-reward-card selectable rarity-border-${rarity} ${selected ? "selected" : ""}" data-lock-reward-card="${index}">
+      <div class="pool-card-head">
+        <h3>${card.name}</h3>
+        <span class="pill rarity-${rarity}">${rarityLabels[rarity]}</span>
+      </div>
+      <dl class="pool-card-spec">
+        <div><dt>費用</dt><dd>${cardBaseCost(card)} 能量</dd></div>
+        <div><dt>系列</dt><dd>${renderSeriesTags(card.type)}</dd></div>
+        <div class="full"><dt>說明</dt><dd>${keywordText(card.text || "")}</dd></div>
+      </dl>
+    </article>`;
+}
+
+function attachCardRewardModalEvents() {
+  app.querySelectorAll("[data-lock-reward-card]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.selectedRewardCard = Number(el.dataset.lockRewardCard);
+      render();
+    });
+  });
+  app.querySelector("[data-confirm-card-reward]")?.addEventListener("click", () => {
+    const picked = state.cardRewardChoices?.[state.selectedRewardCard]?.card;
+    if (!picked) return;
+    state.player.deck.push(makeCard(picked.name));
+    state.postBattle.log.push(`獲得卡牌「${picked.name}」。`);
+    state.showCardRewardModal = false;
+    state.selectedRewardCard = null;
+    state.screen = "postbattle";
+    render();
+  });
+  app.querySelector("[data-skip-card-reward]")?.addEventListener("click", () => {
+    state.postBattle.log.push("沒有拿取卡牌。");
+    state.showCardRewardModal = false;
+    state.selectedRewardCard = null;
+    state.screen = "postbattle";
+    render();
+  });
 }
 
 function renderCardReward() {
@@ -5500,35 +5659,47 @@ function renderVersionEnd() {
 function renderPostBattle() {
   const post = state.postBattle || { actionsLeft: 0, log: [] };
   const canContinue = post.actionsLeft <= 0;
+  const fame = currentFameLevel();
+  const fameLabel = `${fame.name}(${state.player.fameValue || 0})-${state.player.name}`;
   app.innerHTML = `
-    <main class="screen">
-      <section class="page">
-        <div class="reward-panel" style="padding:28px">
-          <h2>戰後行動</h2>
-          <div class="deck-list">
-            <article class="deck-entry">
-              <span class="pill">狀態</span>
-              <div>
-                <p>${post.log.join("<br>")}</p>
-              </div>
-            </article>
-            <article class="deck-entry">
-              <span class="pill">行動</span>
-              <div>
-                <h3>剩餘 ${post.actionsLeft} 次</h3>
-                <p>可以外出閒逛、休息一下或是精進自己。行動次數用完後可以開始下次直播。</p>
-              </div>
-            </article>
+    <main class="postbattle-screen">
+      <section class="postbattle-stage">
+        <img class="postbattle-bg" src="${assetPaths.postBattleRoom}" alt="戰後行動畫面" onerror="this.closest('.postbattle-stage').classList.add('fallback')" />
+        <div class="postbattle-fallback-bg" aria-hidden="true"></div>
+        <div class="postbattle-top-status">
+          <span class="postbattle-fame">${fameLabel}</span>
+          <span class="postbattle-money">${state.player.money}元</span>
+          <span class="postbattle-hp">${state.player.hp}/${state.player.maxHp}</span>
+        </div>
+        <button class="postbattle-side-button postbattle-deck-button" data-postbattle-deck>牌組</button>
+        <button class="postbattle-side-button postbattle-backpack-button" data-postbattle-backpack>背包</button>
+        <div class="postbattle-main-panel">
+          <div class="postbattle-log">
+            <p>在休息過後精神有所回復。</p>
+            <p>下次開播前你要（剩餘${post.actionsLeft}次）</p>
           </div>
-          <div class="actions">
+          <div class="postbattle-actions">
             <button class="ghost-button" data-wander ${post.actionsLeft <= 0 ? "disabled" : ""}>外出閒逛</button>
             <button class="secondary-button" data-upgrade ${post.actionsLeft <= 0 ? "disabled" : ""}>精進自己</button>
-            <button class="secondary-button" data-rest ${post.actionsLeft <= 0 ? "disabled" : ""}>休息一下</button>
-            <button class="primary-button" data-next ${!canContinue ? "disabled" : ""}>開始下次直播</button>
+            <button class="secondary-button" data-rest ${post.actionsLeft <= 0 ? "disabled" : ""}>在休息一下</button>
+            <button class="primary-button" data-next ${!canContinue ? "disabled" : ""}>開始直播</button>
           </div>
         </div>
       </section>
+      ${state.showRunDeck ? renderDeckOverlay() : ""}
+      ${state.showBackpack ? renderBackpackOverlay() : ""}
     </main>`;
+  app.querySelector("[data-postbattle-deck]")?.addEventListener("click", () => {
+    state.showRunDeck = true;
+    state.showBackpack = false;
+    render();
+  });
+  app.querySelector("[data-postbattle-backpack]")?.addEventListener("click", () => {
+    state.showBackpack = true;
+    state.showRunDeck = false;
+    render();
+  });
+  attachBattleOverlays();
   app.querySelector("[data-wander]")?.addEventListener("click", () => {
     if (!usePostBattleAction()) return;
     handleWander();
@@ -5570,18 +5741,43 @@ function handleWander() {
   }
   const isEventTest = new URLSearchParams(window.location.search).get("test") === "events";
   if (!isEventTest && Math.random() < 0.3) {
-    handleNoEventWander("外出閒逛：沒事發生。");
-    render();
+    startNoEventWander();
     return;
   }
   const event = rollRunEvent();
   if (!event) {
-    handleNoEventWander("外出閒逛：附近安靜得有點可怕，沒事發生。");
-    render();
+    startNoEventWander();
     return;
   }
   state.player.seenEvents = [...(state.player.seenEvents || []), event.id];
   state.currentEvent = prepareRunEvent(event);
+  state.eventLineIndex = 0;
+  state.screen = "event";
+  render();
+}
+
+function startNoEventWander() {
+  if (state.player?.items?.includes("美食名簿")) {
+    state.player.maxHp += 3;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + 3);
+    state.currentEvent = {
+      id: "__no_event_food_note__",
+      name: "沒事發生",
+      category: "無事發生",
+      lines: ["什麼事情都沒發生。你依照美食名簿的推薦去了一家餐廳放鬆。"],
+      outcome: "沒事發生。你依照美食名簿的推薦去了一家餐廳放鬆。",
+      effects: [],
+    };
+  } else {
+    state.currentEvent = {
+      id: "__no_event__",
+      name: "沒事發生",
+      category: "無事發生",
+      lines: ["什麼事情都沒發生。"],
+      outcome: "什麼事情都沒發生。",
+      effects: [],
+    };
+  }
   state.eventLineIndex = 0;
   state.screen = "event";
   render();

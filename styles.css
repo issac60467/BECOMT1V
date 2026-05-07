@@ -1953,6 +1953,10 @@ button:disabled {
   margin-top: auto;
 }
 
+.backpack-slot.filled .backpack-discard {
+  margin-top: auto;
+}
+
 .backpack-item-icon {
   height: 78px;
   display: grid;
@@ -3297,3 +3301,430 @@ button:disabled {
   display: none !important;
 }
 
+.settlement-screen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #17081b;
+}
+
+.settlement-stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 1.7777777778));
+  height: min(100vh, calc(100vw / 1.7777777778));
+  overflow: hidden;
+  background: radial-gradient(circle at 52% 45%, rgba(255, 176, 216, 0.9), #f2a8cd 45%, #8b4a8a 100%);
+  color: #fff;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+.settlement-bg,
+.settlement-fallback-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.settlement-bg {
+  object-fit: cover;
+  z-index: 0;
+}
+
+.settlement-fallback-bg {
+  display: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 49% 45%, rgba(255, 234, 249, 0.46), transparent 22%),
+    linear-gradient(135deg, rgba(255, 207, 230, 0.95), rgba(238, 142, 195, 0.92));
+}
+
+.settlement-stage.fallback .settlement-fallback-bg {
+  display: block;
+}
+
+.settlement-top-status {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 8%;
+  z-index: 2;
+  color: #fff7ff;
+  font-weight: 900;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+}
+
+.settlement-top-status span {
+  position: absolute;
+  top: 72%;
+  transform: translateY(-50%);
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: clamp(14px, 1.42vw, 23px);
+  line-height: 1;
+}
+
+.settlement-fame {
+  left: 34.8%;
+  width: 15.7%;
+}
+
+.settlement-money {
+  left: 56.5%;
+  width: 10.8%;
+}
+
+.settlement-hp {
+  left: 73.4%;
+  width: 10.8%;
+}
+
+.settlement-text-box {
+  position: absolute;
+  left: 35.4%;
+  top: 16.75%;
+  width: 27.8%;
+  height: 9.7%;
+  z-index: 2;
+  padding: 1.25% 1.8%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.3em;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  color: #fff7ff;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.55);
+}
+
+.settlement-text-box p {
+  margin: 0;
+  font-size: clamp(16px, 1.55vw, 25px);
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.settlement-claim-button {
+  margin-top: 0.15em;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: #fff7ff;
+  font-size: clamp(16px, 1.55vw, 25px);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.settlement-side-button {
+  position: absolute;
+  z-index: 3;
+  border: 0;
+  background: transparent;
+  color: #fff7ff;
+  font-size: clamp(13px, 1.16vw, 19px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.72);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 0.2% 0;
+}
+
+.settlement-side-button:hover {
+  filter: brightness(1.2);
+}
+
+.settlement-deck-button {
+  left: 84.2%;
+  top: 5.4%;
+  width: 13.8%;
+  height: 23.05%;
+}
+
+.settlement-backpack-button {
+  left: 84.2%;
+  top: 31.7%;
+  width: 13.8%;
+  height: 19.95%;
+}
+
+.settlement-card-modal {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  top: 50%;
+  width: min(74%, 1040px);
+  max-height: 82%;
+  transform: translate(-50%, -50%);
+  padding: 4.2% 2.4% 2.2%;
+  border: 2px solid rgba(255, 213, 244, 0.86);
+  border-radius: 10px;
+  background: rgba(24, 13, 34, 0.94);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58), 0 0 30px rgba(255, 126, 208, 0.28);
+}
+
+.settlement-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-height: 56vh;
+  overflow: auto;
+}
+
+.settlement-reward-card {
+  min-height: 270px;
+  cursor: pointer;
+}
+
+.settlement-reward-card.selected {
+  border-color: #ffe783;
+  box-shadow: 0 0 0 3px rgba(255, 231, 131, 0.35), 0 0 24px rgba(255, 215, 91, 0.28);
+}
+
+.settlement-skip-button {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  border: 1px solid rgba(255, 188, 224, 0.72);
+  border-radius: 7px;
+  padding: 8px 14px;
+  background: rgba(76, 27, 59, 0.9);
+  color: #ffe9f6;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.settlement-confirm-button {
+  display: block;
+  min-width: 190px;
+  margin: 20px auto 0;
+}
+
+.postbattle-screen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #251134;
+}
+
+.postbattle-stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 1.7777777778));
+  height: min(100vh, calc(100vw / 1.7777777778));
+  overflow: hidden;
+  color: #fff7ff;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  background: linear-gradient(135deg, #7e4a9d, #db7fb7);
+}
+
+.postbattle-bg,
+.postbattle-fallback-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.postbattle-bg {
+  object-fit: cover;
+  z-index: 0;
+}
+
+.postbattle-fallback-bg {
+  display: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 60%, rgba(255, 185, 219, 0.72), transparent 30%),
+    linear-gradient(135deg, #5f3d8e, #e67db4);
+}
+
+.postbattle-stage.fallback .postbattle-fallback-bg {
+  display: block;
+}
+
+.postbattle-top-status {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 8%;
+  z-index: 2;
+  font-weight: 900;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+}
+
+.postbattle-top-status span {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: clamp(14px, 1.42vw, 23px);
+  line-height: 1;
+}
+
+.postbattle-fame {
+  left: 29.6%;
+  width: 23%;
+}
+
+.postbattle-money {
+  left: 48.6%;
+  width: 16%;
+}
+
+.postbattle-hp {
+  left: 68.3%;
+  width: 15.3%;
+}
+
+.postbattle-main-panel {
+  position: absolute;
+  z-index: 2;
+  left: 28.2%;
+  top: 14.2%;
+  width: 43.4%;
+  height: 22.1%;
+  padding: 1.35% 3.1% 2.3%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+  color: #fff7ff;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.72);
+}
+
+.postbattle-log {
+  overflow: hidden;
+  font-size: clamp(18px, 1.52vw, 26px);
+  font-weight: 900;
+  line-height: 1.28;
+}
+
+.postbattle-log p,
+.postbattle-action-copy p,
+.postbattle-action-copy h3 {
+  margin: 0 0 4px;
+}
+
+.postbattle-action-copy {
+  font-size: clamp(13px, 1.02vw, 18px);
+  line-height: 1.35;
+}
+
+.postbattle-action-copy h3 {
+  font-size: clamp(15px, 1.2vw, 20px);
+}
+
+.postbattle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.postbattle-actions button {
+  min-height: 40px;
+  padding: 7px 16px;
+  border: 2px solid rgba(189, 255, 255, 0.95);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(155, 255, 255, 0.96), rgba(28, 164, 190, 0.96));
+  color: #092135;
+  font-weight: 950;
+  font-size: clamp(14px, 1.08vw, 20px);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -3px 0 rgba(0, 86, 112, 0.45),
+    0 4px 0 rgba(5, 67, 88, 0.75),
+    0 8px 16px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+
+.postbattle-actions button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.postbattle-actions button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -2px 0 rgba(0, 86, 112, 0.35),
+    0 2px 0 rgba(5, 67, 88, 0.75),
+    0 5px 10px rgba(0, 0, 0, 0.24);
+}
+
+.postbattle-actions button:disabled {
+  opacity: 0.48;
+  filter: grayscale(0.35);
+  cursor: not-allowed;
+}
+
+.postbattle-side-button {
+  position: absolute;
+  z-index: 3;
+  border: 0;
+  background: transparent;
+  color: #fff7ff;
+  font-size: clamp(15px, 1.36vw, 23px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.72);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0;
+}
+
+.postbattle-deck-button {
+  left: 85.3%;
+  top: 25.4%;
+  width: 14.1%;
+  height: 4.5%;
+}
+
+.postbattle-backpack-button {
+  left: 85.3%;
+  top: 52.4%;
+  width: 14.1%;
+  height: 4.5%;
+}
+
+@media (max-width: 820px) {
+  .settlement-text-box {
+    left: 35.4%;
+    width: 27.8%;
+  }
+
+  .settlement-card-modal {
+    width: 92%;
+    max-height: 90%;
+    padding-top: 58px;
+  }
+
+  .settlement-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
