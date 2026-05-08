@@ -24,6 +24,7 @@ const assetPaths = {
   characterSelect: "assets/character-select.png?v=20260502-1",
   chinchinkoProfile: "assets/chinchinko-profile.png",
   chinchinkoBattleAvatar: "assets/chinchinko-battle-half-cropped.png",
+  introRoger: "assets/intro-roger-9527.png?v=20260508-1",
   introVideo: "assets/intro-xd-hq.mp4",
   hqExterior: "assets/xd-hq-exterior.png",
   mentor: "assets/xiao-zhengming.png",
@@ -37,8 +38,14 @@ const assetPaths = {
   supportT1vBadge: "assets/support-t1v-badge.png",
   uglyPillow: "assets/ugly-pillow.png",
   kutaBoss: "assets/kuta-boss.png",
+  kutaAppear: "assets/kuta-appear.png?v=20260508-1",
   settlementRoom: "assets/settlement-room.png?v=20260507-1",
   postBattleRoom: "assets/postbattle-room.png?v=20260507-1",
+  eventFrame: "assets/event-frame.png?v=20260508-1",
+  eventSistersQuarrel: "assets/event-sisters-quarrel.png?v=20260508-1",
+  eventRamenLostMan: "assets/event-ramen-lost-man.png?v=20260508-1",
+  eventBuffet: "assets/event-buffet.png?v=20260508-1",
+  eventWorldChampion: "assets/worldchampion.png?v=20260509-1",
 };
 
 function imageWithFallback(src, alt, className, fallback = "") {
@@ -150,16 +157,15 @@ const minibosses = {
   kuta: {
     id: "kuta",
     name: "久田",
-    hp: 60,
+    hp: 70,
     attack: 7,
     image: assetPaths.kutaBoss,
-    traits: ["天籟美聲", "粉絲服務", "專業主播"],
+    traits: ["粉絲服務", "專業主播"],
     traitText: {
-      "天籟美聲": "每回合無效對手給予我方其他角色的負面效果一次。",
       "粉絲服務": "每回合恢復擁有久田戀愛粉特性的單位 2 點生命。",
       "專業主播": "自己回合開始時減少自身最高數值的負面效果 3 層。",
     },
-    intentCycle: ["thigh", "attack", "world", "reincarnate", "defend"],
+    intentCycle: ["world", "attack", "reincarnate", "thigh"],
   },
 };
 
@@ -220,13 +226,12 @@ const battleKeywordDescriptions = {
   ...keywordDescriptions,
   "嘲諷": "必須優先攻擊此目標。",
   "反擊姿態": "受到攻擊傷害時，攻擊者會受到該單位攻擊傷害的反擊。",
-  "世界": "久田特殊意圖。下回合你只能打出 1 張卡片。",
+  "世界": "久田特殊意圖。下回合抽到的牌會附加凝滯，並使久田與久田戀愛粉獲得可疊加的世界增益。",
   "露大腿": "久田特殊意圖。久田戀愛粉攻擊傷害提高。",
   "轉生": "久田特殊意圖。將同陣營單位轉生為久田戀愛粉。",
-  "天籟美聲": "每回合無效對手給予我方其他角色的負面效果一次。",
   "粉絲服務": "每回合恢復擁有久田戀愛粉特性的單位 2 點生命值。",
   "專業主播": "自己回合開始時減少自身最高數值的負面效果 3 層。",
-  "久田戀愛粉": "代為承受久田受到的一半攻擊傷害。",
+  "久田戀愛粉": "代為承受久田受到的一半攻擊傷害。回合結束時給予久田 3 點防禦值。",
 };
 delete battleKeywordDescriptions["增益牌"];
 
@@ -250,29 +255,24 @@ const runEvents = [
     name: "吃到飽",
     category: "永久事件",
     scope: "global",
-    text: "今天是個風光明媚風和日麗的日子，你決定要讓自己的胃滿足，大滿足。",
+    image: assetPaths.eventBuffet,
+    text: "今天是個風光明媚風和日麗的日子，親親子去外面吃早餐時遇到了兩名男子，男子詢問親親子要不要參加他們的YT企劃-早餐吃到飽。",
     lines: [
-      "今天是個風光明媚風和日麗的日子，你決定要讓自己的胃滿足，大滿足。",
-      "所以今天你決定吃哪一餐？",
+      "今天是個風光明媚風和日麗的日子，親親子去外面吃早餐時遇到了兩名男子，男子詢問親親子要不要參加他們的YT企劃-早餐吃到飽。",
+      "你決定參加，還是不參加？",
     ],
     options: [
       {
-        label: "早餐吃到飽",
+        label: "參加",
         outcome: "",
-        lines: ["你花了500元，你吃得很滿足。你生命值上限提高10點並恢復50%最大生命。"],
-        effects: [{ type: "money", amount: -500 }, { type: "maxHp", amount: 10 }, { type: "healPercentMax", percent: 0.5 }],
+        lines: ["你吃得很滿足，但是因為吃得太飽直播時暈碳。你生命值上限提高10點但損失25點生命。"],
+        effects: [{ type: "maxHpNoHeal", amount: 10 }, { type: "hp", amount: -25 }],
       },
       {
-        label: "午餐吃到飽",
+        label: "不參加",
         outcome: "",
-        lines: ["你吃太飽了，為了趕回家你花了1000元叫車回家，加上餐費總計支出2000元。"],
-        effects: [{ type: "money", amount: -2000 }],
-      },
-      {
-        label: "晚餐吃到飽",
-        outcome: "",
-        lines: ["你花了1000元在自助餐大快朵頤，但是吃太飽導致直播遲到，減少3點名氣值。"],
-        effects: [{ type: "money", amount: -1000 }, { type: "fame", amount: -3 }],
+        lines: ["無事發生，但不知道為什麼直播不順，因而減少3點名氣值。"],
+        effects: [{ type: "fame", amount: -3 }],
       },
     ],
   },
@@ -409,10 +409,11 @@ const runEvents = [
     name: "世界冠軍的特訓",
     category: "永久事件",
     scope: "global",
-    text: "今天你到公園散步，有個在公園散步的國字臉阿伯叫住了你。",
+    image: assetPaths.eventWorldChampion,
+    text: "今天你到公園散步，有個國字臉阿伯叫住了你。",
     lines: [
-      "今天你到公園散步，有個在公園散步的國字臉阿伯叫住了你。",
-      "我從妳的眼中看出了熱愛卡牌的心，或許我能助妳一臂之力。",
+      "今天你到公園散步，有個國字臉阿伯叫住了你。",
+      "阿伯：我從妳的眼中看出了熱愛卡牌的心，或許我能助妳一臂之力。",
       "你選擇接受阿伯好意，或是不接受阿伯好意？",
     ],
     options: [
@@ -435,6 +436,7 @@ const runEvents = [
     name: "姊妹的爭吵",
     category: "永久事件",
     scope: "global",
+    image: assetPaths.eventSistersQuarrel,
     text: "在街頭閒逛的你突然聽到激烈的爭吵聲。",
     lines: [
       "在街頭閒逛的你突然聽到激烈的爭吵聲。",
@@ -527,6 +529,7 @@ const runEvents = [
     name: "吃拉麵迷路的男人",
     category: "初始事件",
     scope: "initial",
+    image: assetPaths.eventRamenLostMan,
     text: "今天你依照IG美食名家M98的推薦前往探店，在路上你看到一位大腹便便的男子表情慌恐地四處張望。",
     lines: [
       "今天你依照IG美食名家M98的推薦前往探店，在路上你看到一位大腹便便的男子表情慌恐地四處張望。",
@@ -656,7 +659,7 @@ const rewards = [
     icon: "📱",
     image: assetPaths.supportTablet,
     desc: "不知道是誰的平板...，水時間的利器。",
-    effect: "每場戰鬥開始時，抽 2張牌。",
+    effect: "一般小戰鬥的戰鬥時間延長 1 回合。",
     apply(player) {
       player.items.push("神秘的平板");
     },
@@ -924,6 +927,37 @@ const cards = {
       draw(1);
     },
   },
+  "先聲奪人": {
+    name: "先聲奪人",
+    cost: 1,
+    type: "剪剪系",
+    text: "對敵方單體造成 10 點攻擊傷害。若是本牌為本回合打出的第一張牌，額外生成 1 張小剪刀到手中。",
+    upgradeText: "對敵方單體造成 13 點攻擊傷害。若是本牌為本回合打出的第一張牌，額外生成 1 張小剪刀到手中。",
+    target: "enemy",
+    play(target) {
+      dealAttack(target, this.upgraded ? 13 : 10, "親親子");
+      if ((state.battle.playedCardsThisTurn || 0) === 1) {
+        addToHand("小剪刀");
+        log("先聲奪人觸發，獲得 1 張小剪刀。");
+      }
+    },
+  },
+  "防愛": {
+    name: "防愛",
+    cost: 1,
+    type: "魅惑系",
+    text: "本回合有魅惑的敵人攻擊傷害下降 2。親親子獲得 4 點防禦。",
+    upgradeText: "本回合有魅惑的敵人攻擊傷害下降 2。親親子獲得 5 點防禦。",
+    target: "self",
+    play() {
+      const block = this.upgraded ? 5 : 4;
+      const targets = liveEnemyUnits().filter((unit) => (unit.charm || 0) > 0);
+      targets.forEach((unit) => addAttackDown(unit, 2));
+      state.battle.player.block += block;
+      if (targets.length) log(`防愛使 ${targets.length} 名有魅惑的敵人攻擊傷害下降 2。`);
+      log(`親親子獲得 ${block} 點防禦。`);
+    },
+  },
   "煙霧瀰漫": {
     name: "煙霧瀰漫",
     cost: 1,
@@ -1081,7 +1115,7 @@ const cards = {
   },
   "神剪武具": {
     name: "神剪武具",
-    cost: 3,
+    cost: 4,
     type: "蕭證明支援卡",
     rarity: "傳說",
     text: "使 1 名敵方單位失去一半生命值。必有。燒毀。",
@@ -1844,7 +1878,13 @@ const starterDeckNames = [
   "我不知道誒",
   "我不知道誒",
   "最喜歡你了",
+  "最喜歡你了",
   "小菸時間",
+  "小菸時間",
+  "先聲奪人",
+  "先聲奪人",
+  "防愛",
+  "防愛",
 ];
 
 const cardPools = {
@@ -2141,6 +2181,7 @@ function createMinibossTestRun() {
   addRewardToBackpack(shopItems["累累病藥水"]);
   addRewardToBackpack(eventItems["三色豆水餃"]);
   state.player.battleIndex = 5;
+  state.player.routeIndex = runRoute.findIndex((node) => node.id === "miniboss1");
   startBattle([], { type: "miniboss" });
 }
 
@@ -2157,7 +2198,8 @@ function createEventTestRun() {
     moneyRate: 1,
     moneyReward: 0,
     fameReward: 0,
-    actionsLeft: 99,
+    actionsLeft: Infinity,
+    usedActions: {},
     log: ["事件測試模式：已跳過戰鬥，可直接外出閒逛測試事件。"],
   };
   state.screen = "postbattle";
@@ -2178,7 +2220,32 @@ function createPostBattleTestRun() {
     moneyReward: 1200,
     fameReward: 6,
     actionsLeft: 2,
+    usedActions: {},
     log: ["親親子結束了第 1 場直播。", "獲得金錢 1200 元，名氣值提高 6 點。"],
+  };
+  state.screen = "postbattle";
+}
+
+function createPostBattle5TestRun() {
+  state.player = createPlayer();
+  state.player.fameValue = 45;
+  state.player.money = 5000;
+  state.player.selectedMiniboss1 = "kuta";
+  state.player.battleIndex = 5;
+  state.player.routeIndex = runRoute.findIndex((node) => node.battleIndex === 5);
+  addRewardToBackpack(shopItems["手槍"]);
+  addRewardToBackpack(eventItems["三色豆水餃"]);
+  state.postBattle = {
+    battleIndex: 5,
+    result: "won",
+    recovered: 0,
+    rawMoney: 1600,
+    moneyRate: 1,
+    moneyReward: 1600,
+    fameReward: 8,
+    actionsLeft: 2,
+    usedActions: {},
+    log: ["親親子結束了第 5 場直播。", "測試模式：行動結束後會進入久田小頭目劇情。"],
   };
   state.screen = "postbattle";
 }
@@ -2297,14 +2364,14 @@ function createKutaFan(index = 1) {
     turnIndex: 0,
     traits: ["久田戀愛粉", randomTrait.name],
     traitDetails: [
-      { name: "久田戀愛粉", rarity: "special", text: "代為承受久田受到的一半攻擊傷害。" },
+      { name: "久田戀愛粉", rarity: "special", text: "代為承受久田受到的一半攻擊傷害。回合結束時給予久田 3 點防禦值。" },
       { ...randomTrait, rarity },
     ],
     moneyReward: 100 + (traitMoney[rarity] || 0),
   };
   randomTrait.apply?.(unit);
   unit.baseAttack = unit.attack;
-  setEnemyIntent(unit, "defend", { persistNextTurn: true });
+  setEnemyIntent(unit, rollEnemyIntent(unit), { persistNextTurn: true });
   return unit;
 }
 
@@ -2514,6 +2581,8 @@ function initializeApp() {
     createShopTestRun();
   } else if (params.get("test") === "events") {
     createEventTestRun();
+  } else if (params.get("test") === "postbattle5") {
+    createPostBattle5TestRun();
   } else if (params.get("test") === "postbattle") {
     createPostBattleTestRun();
   }
@@ -2597,7 +2666,7 @@ function renderCharacterProfile() {
     button.onclick = () => {
       state.screen = "introCutscene";
       state.cutsceneStep = 0;
-      state.cutsceneMode = "still";
+      state.cutsceneMode = "prologue";
       render();
     };
   });
@@ -2611,6 +2680,42 @@ function renderIntroCutscene() {
     "親親子：傳說中創辦人身家三千萬億，要是我成為台一V，我也能這樣嗎...",
   ];
   const mode = state.cutsceneMode || "still";
+  if (mode === "prologue") {
+    const prologueLines = [
+      "實況圈瞬息萬變，昨日的流量寵兒可能今天就無人問津。但卻有一人在這亂世中屹立不搖，他就是 Roger9527！",
+      "在直播界呼風喚雨的他不知道累積了多少財富，但他並沒有滿足於目前的成就。\n他派出得力心腹蕭證明，意圖把版圖擴展至 VT 圈。再經過層層選拔後，被選中的人正站在 XD集團大樓前。",
+    ];
+    const step = state.cutsceneStep || 0;
+    app.innerHTML = `
+      <main class="event-screen intro-story-event">
+        <section class="event-stage">
+          <img class="event-frame-bg" src="${assetPaths.eventFrame}" alt="劇情畫面框" onerror="this.closest('.event-stage').classList.add('fallback')" />
+          <div class="event-frame-fallback" aria-hidden="true"></div>
+          <div class="event-image-area">
+            ${step === 0 ? "" : `<div class="event-picture" role="img" aria-label="Roger9527" style="background-image:url('${assetPaths.introRoger}')"></div>`}
+          </div>
+          <div class="event-dialogue">
+            <div class="event-text">
+              <p>${prologueLines[step].replace(/\n/g, "<br>")}</p>
+            </div>
+            <div class="event-options">
+              <button class="event-option" data-next><strong>下一句</strong></button>
+            </div>
+          </div>
+        </section>
+      </main>`;
+    app.querySelector("[data-next]").onclick = () => {
+      if (step < prologueLines.length - 1) {
+        state.cutsceneStep = step + 1;
+        render();
+        return;
+      }
+      state.cutsceneStep = 0;
+      state.cutsceneMode = "still";
+      render();
+    };
+    return;
+  }
   if (mode === "video") {
     app.innerHTML = `
       <main class="screen">
@@ -2640,36 +2745,37 @@ function renderIntroCutscene() {
   }
   const step = state.cutsceneStep || 0;
   app.innerHTML = `
-    <main class="screen">
-      <section class="cutscene-screen still-mode">
-        <div class="cutscene-art">
-          <video class="cutscene-video" data-intro-still src="${assetPaths.introVideo}" muted playsinline preload="metadata"></video>
-          <div class="cutscene-fallback">
+    <main class="event-screen intro-story-event">
+      <section class="event-stage">
+        <img class="event-frame-bg" src="${assetPaths.eventFrame}" alt="劇情畫面框" onerror="this.closest('.event-stage').classList.add('fallback')" />
+        <div class="event-frame-fallback" aria-hidden="true"></div>
+        <div class="event-image-area">
+          <div class="event-picture" role="img" aria-label="XD集團總部" style="background-image:url('${assetPaths.hqExterior}')"></div>
+          <div class="cutscene-fallback event-hq-fallback">
             <div class="hq-building">
               <div class="hq-sign">XD集團</div>
               <div class="hq-door"></div>
             </div>
             <div class="hq-plaza"></div>
           </div>
-          <div class="cutscene-fade" data-cutscene-fade></div>
         </div>
-        <div class="dialogue-panel cutscene-dialogue">
-          <div class="dialogue-text">${lines[step]}</div>
-          <button class="primary-button" data-next>${step < lines.length - 1 ? "繼續" : "進入總部"}</button>
+        <div class="event-dialogue">
+          <div class="event-text">
+            <p>${lines[step]}</p>
+          </div>
+          <div class="event-options">
+            <button class="event-option" data-next><strong>下一句</strong></button>
+          </div>
         </div>
       </section>
     </main>`;
-  const stillVideo = app.querySelector("[data-intro-still]");
-  stillVideo.addEventListener("loadedmetadata", () => {
-    stillVideo.currentTime = 0;
-    stillVideo.pause?.();
-  }, { once: true });
   app.querySelector("[data-next]").onclick = () => {
     if (step < lines.length - 1) {
       state.cutsceneStep = step + 1;
       render();
       return;
     }
+    state.cutsceneStep = 0;
     state.cutsceneMode = "video";
     render();
   };
@@ -2677,23 +2783,31 @@ function renderIntroCutscene() {
 
 function renderMentor() {
   const lines = [
-    "蕭證明：妳就是今天出道的新人嗎？",
-    "蕭證明：公司給妳準備了一點東西。",
-    "蕭證明：選完就可以滾了。",
+    "蕭證明：你就是今天出道的新人嗎？",
+    "蕭證明：拿去看。蕭證明朝你丟過來一團紙球，你接住並攤開紙球查看其中內容。",
+    "紙球上寫著：在五回合的直播中會刷新源源不絕的觀眾，用卡牌擊倒他們可以騙...我是說獲得斗內跟名氣值。名氣值不只影響物品出現機率，也是公司對你的考核標準。好好加油吧。",
+    "你看完後還想再追問，但蕭證明阻止了你。",
+    "蕭證明：好了！就這樣，剩下得你自己探索，拿完桌上的支援道具就可以滾了，我還要去跟DE電愛!",
   ];
   app.innerHTML = `
-    <main class="screen">
-      <section class="page office">
-        <div class="mentor-art">
-          <img class="portrait-image" src="${assetPaths.mentor}" alt="蕭證明休息室" onerror="this.closest('.mentor-art').classList.add('fallback')" />
+    <main class="event-screen intro-story-event">
+      <section class="event-stage">
+        <img class="event-frame-bg" src="${assetPaths.eventFrame}" alt="劇情畫面框" onerror="this.closest('.event-stage').classList.add('fallback')" />
+        <div class="event-frame-fallback" aria-hidden="true"></div>
+        <div class="event-image-area mentor-event-image">
+          <div class="event-picture" role="img" aria-label="蕭證明休息室" style="background-image:url('${assetPaths.mentor}')"></div>
           <div class="monitor"></div>
           <div class="bottles">▯▯▯</div>
           <div class="mentor"><div class="hair"></div><div class="head"></div><div class="body"></div><div class="shirt">發</div></div>
           <div class="desk"></div>
         </div>
-        <div class="dialogue-panel">
-          <div class="dialogue-text">${lines[state.mentorStep]}</div>
-          <button class="primary-button" data-next>繼續</button>
+        <div class="event-dialogue">
+          <div class="event-text">
+            <p>${lines[state.mentorStep]}</p>
+          </div>
+          <div class="event-options">
+            <button class="event-option" data-next><strong>下一句</strong></button>
+          </div>
         </div>
       </section>
     </main>`;
@@ -2758,14 +2872,12 @@ function renderRewards() {
     state.player.battleIndex = 1;
     state.player.routeIndex = 0;
     if (state.player.pendingRemove) {
-      state.removeCardNext = "supportBriefing";
+      state.removeCardNext = "startBattle";
       state.screen = "removeCard";
       render();
       return;
     }
-    state.supportBriefingStep = 0;
-    state.screen = "supportBriefing";
-    render();
+    startBattle();
   };
 }
 
@@ -3101,19 +3213,44 @@ function renderShopIntroStory() {
 }
 
 function renderMinibossPrelude() {
-  renderStoryScreen({
-    stepKey: "minibossPreludeStep",
-    background: "black",
-    finalLabel: "開始決戰",
-    lines: ["這一天...終於來了。跟久田決戰的日子。"],
-    onDone: () => {
+  const lines = [
+    "終於到了決戰的日子.....",
+    "久田：你就是想要挑戰我的人嗎？有點意思。",
+    "久田：想要挑戰我的人很多，但她們都成為我的戀愛粉了，你也不例外!",
+  ];
+  const step = state.minibossPreludeStep || 0;
+  const line = lines[Math.min(step, lines.length - 1)];
+  const isFinal = step >= lines.length - 1;
+  app.innerHTML = `
+    <main class="event-screen intro-story-event">
+      <section class="event-stage">
+        <img class="event-frame-bg" src="${assetPaths.eventFrame}" alt="劇情畫面框" onerror="this.closest('.event-stage').classList.add('fallback')" />
+        <div class="event-frame-fallback" aria-hidden="true"></div>
+        <div class="event-image-area">
+          ${step === 0 ? "" : `<div class="event-picture" role="img" aria-label="久田登場" style="background-image:url('${assetPaths.kutaAppear}')"></div>`}
+        </div>
+        <div class="event-dialogue">
+          <div class="event-text">
+            <p>${line}</p>
+          </div>
+          <div class="event-options">
+            <button class="event-option" data-miniboss-next><strong>${isFinal ? "開始決戰" : "下一句"}</strong></button>
+          </div>
+        </div>
+      </section>
+    </main>`;
+  app.querySelector("[data-miniboss-next]").onclick = () => {
+    if (!isFinal) {
+      state.minibossPreludeStep = step + 1;
+      render();
+      return;
+    }
       const node = state.pendingRouteNode;
       state.pendingRouteNode = null;
       state.minibossPreludeStep = 0;
       state.player.battleIndex = node?.battleIndex || state.player.battleIndex;
       startBattle([], { type: "miniboss" });
-    },
-  });
+  };
 }
 
 function renderShopCardOffer(offer, index) {
@@ -3482,7 +3619,7 @@ function renderAudienceCard(unit) {
 function startBattle(allies = [], options = {}) {
   const battleIndex = state.player.battleIndex || 1;
   const isMinibossBattle = options.type === "miniboss" || options.isMinibossBattle === true;
-  const maxTurns = isMinibossBattle ? null : 5;
+  const maxTurns = isMinibossBattle ? null : 5 + (state.player.items.includes("神秘的平板") ? 1 : 0);
   const enemyTotal = 10;
   const playerUnit = {
     id: "player",
@@ -3537,6 +3674,8 @@ function startBattle(allies = [], options = {}) {
     damageTakenMultiplier: state.player.nextBattleDamageTakenMultiplier || 1,
     fameRewardMultiplier: state.player.nextBattleFameMultiplier || 1,
     kutaVoiceNegatedThisRound: false,
+    worldDebuffActive: false,
+    nextPlayerWorldDebuff: false,
     log: [],
   };
   state.player.nextBattleDamageTakenMultiplier = 1;
@@ -3545,7 +3684,7 @@ function startBattle(allies = [], options = {}) {
   applyEntranceTraits();
   assignEnemyIntents();
   applyDrawnMapConfusion();
-  draw(5 + (state.player.items.includes("神秘的平板") ? 2 : 0));
+  draw(5);
   drawSpecificOpeningCardBySeries("暴頭七星", "小菸系");
   if (state.player.items.includes("玩具剪刀")) {
     addToHand("小剪刀");
@@ -3768,6 +3907,7 @@ function renderHeroStatusBox(player) {
   if (player.noDamage) statuses.push("不能造成傷害");
   if (state.battle?.playerImmuneToEnemyDamage) statuses.push("敵傷無效");
   if (state.battle?.cardPlayLimit) statuses.push(`出牌限制 ${state.battle.cardPlayLimit}`);
+  if (state.battle?.worldDebuffActive) statuses.push("世界");
   if (state.battle?.enemyDamageReduction) statuses.push(`敵傷 -${state.battle.enemyDamageReduction}`);
   if (state.battle?.attackDamageBonus) statuses.push(`攻傷 +${state.battle.attackDamageBonus}`);
   if (state.battle?.powers?.bladeStorm) statuses.push("劍刃風暴");
@@ -3786,6 +3926,7 @@ function renderUnitStatuses(unit) {
     ${unit.charm ? renderCharmStatus(unit) : ""}
     ${unit.attackDown ? `<span class="status broken-sword">攻傷 -${unit.attackDown}</span>` : ""}
     ${unit.tempAttackBuff ? `<span class="status">暫攻 +${unit.tempAttackBuff}</span>` : ""}
+    ${unit.worldStacks ? battleHelpTag(`世界 ${unit.worldStacks}`, "status", battleKeywordDescriptions["世界"]) : ""}
     ${unit.noAttack ? `<span class="status">不能攻擊</span>` : ""}
     ${unit.noDamage ? `<span class="status">不能造成傷害</span>` : ""}
     ${unit.lovePreacherMark ? `<span class="status">被標記</span>` : ""}
@@ -3805,7 +3946,7 @@ function renderBattleEnemySlot(unit) {
           .join("")}</div>`
       : "";
   return `
-    <article class="battle-monster-card ${isDead ? "dead" : ""} ${targetable && !isDead ? "targetable" : ""} ${active ? "active-attacker" : ""}" data-unit="${unit.id}">
+    <article class="battle-monster-card ${unit.isMiniboss ? "miniboss-card" : ""} ${isDead ? "dead" : ""} ${targetable && !isDead ? "targetable" : ""} ${active ? "active-attacker" : ""}" data-unit="${unit.id}">
       <div class="battle-monster-portrait">${unit.image ? `<img src="${unit.image}" alt="${unit.name}" />` : monsterPortraitSvg(unit)}</div>
       <div class="battle-monster-info">
         <h3>${unit.name}</h3>
@@ -4736,13 +4877,13 @@ function transformToKutaFan(target) {
   target.counterStance = false;
   target.traits = ["久田戀愛粉", randomTrait.name];
   target.traitDetails = [
-    { name: "久田戀愛粉", rarity: "special", text: "代為承受久田受到的一半攻擊傷害。" },
+    { name: "久田戀愛粉", rarity: "special", text: "代為承受久田受到的一半攻擊傷害。回合結束時給予久田 3 點防禦值。" },
     { ...randomTrait, rarity },
   ];
   target.moneyReward = 100 + (traitMoney[rarity] || 0);
   randomTrait.apply?.(target);
   target.baseAttack = target.attack;
-  setEnemyIntent(target, "defend", { persistNextTurn: true });
+  setEnemyIntent(target, rollEnemyIntent(target), { persistNextTurn: true });
 }
 
 function checkCharmExecute(target) {
@@ -4833,6 +4974,7 @@ function clearTemporaryAttackBuffs() {
 }
 
 function clearRoundTemporaryStatuses() {
+  state.battle.worldDebuffActive = false;
   [state.battle.player, ...state.battle.allies, ...(state.battle.boss ? [state.battle.boss] : []), ...state.battle.enemies].forEach((unit) => {
     if (unit.tempAttackBuff) {
       unit.attack = Math.max(0, unit.attack - unit.tempAttackBuff);
@@ -4868,7 +5010,19 @@ function draw(count) {
       log("牌庫抽空，洗入棄牌堆。");
     }
     const card = drawNextCardFromDeck(b);
-    if (card) b.hand.push(card);
+    if (card) {
+      applyWorldRetainToDrawnCard(card);
+      b.hand.push(card);
+    }
+  }
+}
+
+function applyWorldRetainToDrawnCard(card) {
+  if (!state.battle?.worldDebuffActive || !card) return;
+  card.retain = true;
+  card.worldRetain = true;
+  if (!String(card.text || "").includes("凝滯")) {
+    card.text = `${card.text || ""} 凝滯。`.trim();
   }
 }
 
@@ -4964,6 +5118,10 @@ function applyEnemyEndOfTurnTraits() {
   b.enemies.filter((enemy) => enemy.hp > 0).forEach((enemy) => {
     if (enemy.traits?.includes("肥宅")) heal(enemy, 3);
     if (enemy.traits?.includes("危險斗內份子") && enemy.hp > 0) damage(enemy, 4);
+    if (enemy.traits?.includes("久田戀愛粉") && b.boss?.hp > 0 && b.boss.name === "久田") {
+      b.boss.block += 3;
+      log(`${enemy.name} 的久田戀愛粉給予久田 3 點防禦。`);
+    }
   });
   fillEnemySlots();
 }
@@ -5014,8 +5172,10 @@ function runKutaAction(kuta) {
   reduceKutaBiggestDebuff(kuta);
   healKutaFans();
   if (kuta.intent === "world") {
-    state.battle.nextPlayerCardPlayLimit = 1;
-    log("久田使用「世界」，下回合你只能打出 1 張卡片。");
+    state.battle.nextPlayerWorldDebuff = true;
+    grantKutaWorldStacks();
+    log("久田使用「世界」，下回合抽到的牌會附加凝滯。");
+    log("久田與久田戀愛粉獲得增益「世界」。");
   } else if (kuta.intent === "thigh") {
     state.battle.enemies
       .filter((unit) => unit.hp > 0 && unit.traits?.includes("久田戀愛粉"))
@@ -5033,6 +5193,15 @@ function runKutaAction(kuta) {
   }
 }
 
+function grantKutaWorldStacks() {
+  const b = state.battle;
+  const targets = [b.boss, ...b.enemies.filter((unit) => unit.hp > 0 && unit.traits?.includes("久田戀愛粉"))]
+    .filter((unit) => unit && unit.hp > 0);
+  targets.forEach((unit) => {
+    unit.worldStacks = (unit.worldStacks || 0) + 1;
+  });
+}
+
 function healKutaFans() {
   state.battle.enemies
     .filter((unit) => unit.hp > 0 && unit.traits?.includes("久田戀愛粉"))
@@ -5040,14 +5209,7 @@ function healKutaFans() {
 }
 
 function kutaVoiceNegatesDebuff(target, debuffName) {
-  const b = state.battle;
-  const kuta = b?.boss;
-  if (!kuta || kuta.hp <= 0 || kuta.name !== "久田") return false;
-  if (!target || target.side !== "enemy" || target.id === kuta.id) return false;
-  if (b.kutaVoiceNegatedThisRound) return false;
-  b.kutaVoiceNegatedThisRound = true;
-  log(`久田的天籟美聲替 ${target.name} 抵擋了負面效果：${debuffName}。`);
-  return true;
+  return false;
 }
 
 function reduceKutaBiggestDebuff(kuta) {
@@ -5151,6 +5313,8 @@ function startPlayerTurn() {
   b.playedCardsThisTurn = 0;
   b.cardPlayLimit = b.nextPlayerCardPlayLimit || null;
   b.nextPlayerCardPlayLimit = null;
+  b.worldDebuffActive = Boolean(b.nextPlayerWorldDebuff);
+  b.nextPlayerWorldDebuff = false;
   b.kutaVoiceNegatedThisRound = false;
   checkWinLose();
   if (b.phase === "won" || b.phase === "lost") {
@@ -5241,12 +5405,22 @@ function enemyIntentAttack(enemy) {
 }
 
 function enemyAttackDamage(enemy, multiplier = 1, shouldLog = true) {
-  const raw = Math.ceil(enemyIntentAttack(enemy) * multiplier);
+  const worldBonus = kutaWorldAttackBonus(enemy);
+  const raw = Math.ceil(enemyIntentAttack(enemy) * multiplier) + worldBonus;
+  if (shouldLog && worldBonus) {
+    log(`久田的世界使攻擊傷害增加 ${worldBonus}。`);
+  }
   const reduced = Math.max(0, raw - (enemy?.attackDown || 0));
   if (shouldLog && enemy?.attackDown && raw !== reduced) {
     log(`${enemy.name} 攻擊傷害下降 ${enemy.attackDown}（${raw}→${reduced}）。`);
   }
   return reduced;
+}
+
+function kutaWorldAttackBonus(enemy) {
+  if (!enemy?.worldStacks) return 0;
+  const retainCount = state.battle.hand.filter((card) => card.retain).length;
+  return retainCount * 3 * enemy.worldStacks;
 }
 
 function enemyHeavyMultiplier(enemy) {
@@ -5284,14 +5458,15 @@ function assignEnemyIntents() {
       enemy.counterStance = enemy.intent === "counter";
       return;
     }
-    setEnemyIntent(enemy, rollEnemyIntent(), { log: false });
+    setEnemyIntent(enemy, rollEnemyIntent(enemy), { log: false });
   });
 }
 
-function rollEnemyIntent() {
+function rollEnemyIntent(enemy = null) {
   const roll = Math.random() * 100;
   if (roll < 15) return "heavy";
   if (roll < 40) return "counter";
+  if (enemy?.traits?.includes("久田戀愛粉")) return "attack";
   if (roll < 60) return "defend";
   return "attack";
 }
@@ -5403,6 +5578,7 @@ function finishBattle() {
     fameReward,
     fameMultiplier,
     actionsLeft: 2,
+    usedActions: {},
     log: [`親親子回復 ${recovered} 點生命。`, `獲得 ${fameReward} 名氣值。`],
   };
   if (b.isMinibossBattle && runRoute[currentRouteIndex()]?.id === "miniboss1") {
@@ -5661,6 +5837,8 @@ function renderPostBattle() {
   const canContinue = post.actionsLeft <= 0;
   const fame = currentFameLevel();
   const fameLabel = `${fame.name}(${state.player.fameValue || 0})-${state.player.name}`;
+  const actionsText = post.actionsLeft === Infinity ? "∞" : post.actionsLeft;
+  const used = post.usedActions || {};
   app.innerHTML = `
     <main class="postbattle-screen">
       <section class="postbattle-stage">
@@ -5676,12 +5854,12 @@ function renderPostBattle() {
         <div class="postbattle-main-panel">
           <div class="postbattle-log">
             <p>在休息過後精神有所回復。</p>
-            <p>下次開播前你要（剩餘${post.actionsLeft}次）</p>
+            <p>下次開播前你要（剩餘${actionsText}次）</p>
           </div>
           <div class="postbattle-actions">
-            <button class="ghost-button" data-wander ${post.actionsLeft <= 0 ? "disabled" : ""}>外出閒逛</button>
-            <button class="secondary-button" data-upgrade ${post.actionsLeft <= 0 ? "disabled" : ""}>精進自己</button>
-            <button class="secondary-button" data-rest ${post.actionsLeft <= 0 ? "disabled" : ""}>在休息一下</button>
+            <button class="ghost-button" data-wander ${post.actionsLeft <= 0 || used.wander ? "disabled" : ""}>外出閒逛</button>
+            <button class="secondary-button" data-upgrade ${post.actionsLeft <= 0 || used.upgrade ? "disabled" : ""}>精進自己</button>
+            <button class="secondary-button" data-rest ${post.actionsLeft <= 0 || used.rest ? "disabled" : ""}>在休息一下</button>
             <button class="primary-button" data-next ${!canContinue ? "disabled" : ""}>開始直播</button>
           </div>
         </div>
@@ -5701,17 +5879,18 @@ function renderPostBattle() {
   });
   attachBattleOverlays();
   app.querySelector("[data-wander]")?.addEventListener("click", () => {
-    if (!usePostBattleAction()) return;
+    if (!usePostBattleAction("wander")) return;
     handleWander();
   });
   app.querySelector("[data-rest]")?.addEventListener("click", () => {
-    usePostBattleAction();
+    if (!usePostBattleAction("rest")) return;
     const amount = Math.ceil(state.player.maxHp * 0.15);
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + amount);
     state.postBattle.log.push(`休息一下：回復 ${amount} 點生命。`);
     render();
   });
   app.querySelector("[data-upgrade]")?.addEventListener("click", () => {
+    if (!usePostBattleAction("upgrade")) return;
     state.screen = "upgrade";
     render();
   });
@@ -5720,8 +5899,12 @@ function renderPostBattle() {
   });
 }
 
-function usePostBattleAction() {
+function usePostBattleAction(actionType = "") {
   if (!state.postBattle || state.postBattle.actionsLeft <= 0) return false;
+  if (!state.postBattle.usedActions) state.postBattle.usedActions = {};
+  if (actionType && state.postBattle.usedActions[actionType]) return false;
+  if (actionType) state.postBattle.usedActions[actionType] = true;
+  if (state.postBattle.actionsLeft === Infinity) return true;
   state.postBattle.actionsLeft -= 1;
   return true;
 }
@@ -5739,14 +5922,10 @@ function handleWander() {
       return;
     }
   }
-  const isEventTest = new URLSearchParams(window.location.search).get("test") === "events";
-  if (!isEventTest && Math.random() < 0.3) {
-    startNoEventWander();
-    return;
-  }
   const event = rollRunEvent();
   if (!event) {
-    startNoEventWander();
+    state.postBattle?.log?.push("目前沒有可觸發的事件。");
+    renderPostBattle();
     return;
   }
   state.player.seenEvents = [...(state.player.seenEvents || []), event.id];
@@ -5821,6 +6000,7 @@ function rollRunEvent() {
 }
 
 function isRunEventAvailable(event) {
+  if (event.category === "劇情事件" || event.scope === "story") return false;
   if (event.scope === "forced") return false;
   if (event.scope === "initial") {
     const firstMinibossIndex = runRoute.findIndex((node) => node.id === "miniboss1");
@@ -5851,7 +6031,10 @@ function renderRunEvent() {
   app.innerHTML = `
     <main class="event-screen">
       <section class="event-stage">
-        <div class="event-placeholder">
+        <img class="event-frame-bg" src="${assetPaths.eventFrame}" alt="事件畫面框" onerror="this.closest('.event-stage').classList.add('fallback')" />
+        <div class="event-frame-fallback" aria-hidden="true"></div>
+        <div class="event-image-area">
+          ${event.image ? `<div class="event-picture" role="img" aria-label="${event.name || "事件圖片"}" style="background-image:url('${event.image}')"></div>` : ""}
         </div>
         <div class="event-dialogue">
           <div class="event-text">
@@ -5863,7 +6046,7 @@ function renderRunEvent() {
                 <strong>${option.label}</strong>
                 ${option.outcome ? `<span>${option.outcome}</span>` : ""}
               </button>
-            `).join("") : `<button class="event-option" data-event-next><strong>${isLastLine ? "繼續" : "下一句"}</strong>${isLastLine && event.outcome ? `<span>${event.outcome}</span>` : ""}</button>`}
+            `).join("") : `<button class="event-option" data-event-next><strong>下一句</strong>${isLastLine && event.outcome ? `<span>${event.outcome}</span>` : ""}</button>`}
           </div>
         </div>
       </section>
@@ -5944,6 +6127,10 @@ function applyEventEffects(effects) {
     if (effect.type === "maxHp") {
       state.player.maxHp = Math.max(1, state.player.maxHp + effect.amount);
       state.player.hp = Math.min(state.player.maxHp, state.player.hp + Math.max(0, effect.amount));
+    }
+    if (effect.type === "maxHpNoHeal") {
+      state.player.maxHp = Math.max(1, state.player.maxHp + effect.amount);
+      state.player.hp = Math.min(state.player.hp, state.player.maxHp);
     }
     if (effect.type === "addRandomCard") {
       const pool = cardPools[effect.rarity || "normal"] || cardPools.normal;
@@ -6033,7 +6220,6 @@ function renderUpgradeCards() {
   };
   app.querySelectorAll("[data-upgrade-card]").forEach((el) => {
     el.onclick = () => {
-      if (!usePostBattleAction()) return;
       const card = state.player.deck.find((item) => item.id === el.dataset.upgradeCard);
       if (card) {
         card.text = card.upgradeText;
